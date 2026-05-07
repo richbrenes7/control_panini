@@ -5,10 +5,11 @@ import './AlbumChecklist.css';
 
 const API_URL = process.env.REACT_APP_API_URL || '/api';
 
-function AlbumChecklist({ userId, onCollectionChanged }) {
+function AlbumChecklist({ instagram, onCollectionChanged }) {
   const [stamps, setStamps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [openCountries, setOpenCountries] = useState({});
 
   const stampsByCode = useMemo(() => {
     return stamps.reduce((acc, stamp) => {
@@ -18,37 +19,36 @@ function AlbumChecklist({ userId, onCollectionChanged }) {
   }, [stamps]);
 
   const loadStamps = useCallback(async () => {
-    const response = await axios.get(`${API_URL}/stamps/user/${userId}`);
+    if (!instagram) return;
+    const response = await axios.get(`${API_URL}/stamps/user/${instagram}`);
     setStamps(response.data);
-  }, [userId]);
+  }, [instagram]);
 
   useEffect(() => {
-    if (userId) {
+    if (instagram) {
       loadStamps();
     }
-  }, [loadStamps, userId]);
+  }, [loadStamps, instagram]);
 
   const toggleStamp = async (code) => {
     const existingStamp = stampsByCode[code];
-
     try {
       setLoading(true);
       if (existingStamp) {
         await axios.delete(`${API_URL}/stamps/remove`, {
           data: {
-            user_id: userId,
+            user_id: instagram,
             stamp_id: existingStamp.id
           }
         });
       } else {
         await axios.post(`${API_URL}/stamps/add`, {
-          user_id: userId,
+          user_id: instagram,
           stamp_code: code,
           type: getStampType(code),
           quantity: 1
         });
       }
-
       await loadStamps();
       if (onCollectionChanged) {
         onCollectionChanged();
@@ -111,19 +111,22 @@ function AlbumChecklist({ userId, onCollectionChanged }) {
           {COUNTRY_GROUPS.map((country) => {
             const countryCodes = getCountryCodes(country.prefix);
             const ownedCount = countryCodes.filter((code) => stampsByCode[code]).length;
-
+            const isOpen = openCountries[country.prefix] || false;
             return (
               <article key={country.prefix} className="country-card">
-                <div className="country-card-header">
+                <div className="country-card-header" style={{cursor:'pointer'}} onClick={() => setOpenCountries(prev => ({...prev, [country.prefix]: !isOpen}))}>
                   <div>
                     <h4>{country.name}</h4>
                     <span>{country.prefix}</span>
                   </div>
                   <strong>{ownedCount}/20</strong>
+                  <span style={{marginLeft:8}}>{isOpen ? '▲' : '▼'}</span>
                 </div>
-                <div className="stamp-grid">
-                  {countryCodes.map(renderCodeButton)}
-                </div>
+                {isOpen && (
+                  <div className="stamp-grid">
+                    {countryCodes.map(renderCodeButton)}
+                  </div>
+                )}
               </article>
             );
           })}

@@ -1,92 +1,24 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import './App.css';
-import Dashboard from './components/Dashboard';
-import AddStamp from './components/AddStamp';
 import AlbumChecklist from './components/AlbumChecklist';
-import History from './components/History';
+import AddStamp from './components/AddStamp';
 import RepeatedStamps from './components/RepeatedStamps';
 
-const API_URL = process.env.REACT_APP_API_URL || '/api';
-const DONATION_URL = process.env.REACT_APP_DONATION_URL || 'mailto:richbrenes795@gmail.com?subject=Donaci%C3%B3n%20Control%20Panini';
-
 function App() {
-  const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState(null);
+  const [instagram, setInstagram] = useState('');
+  const [showMenu, setShowMenu] = useState({
+    dashboard: true,
+    album: false,
+    add: false,
+    repeated: false
+  });
 
-  const loadUserStats = useCallback(async (userId) => {
-    try {
-      const response = await axios.get(`${API_URL}/stats/${userId}`);
-      setStats(response.data);
-    } catch (error) {
-      console.error('Error cargando estadísticas:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      setCurrentUser(parsedUser);
-      loadUserStats(parsedUser.id);
-    }
-  }, [loadUserStats]);
-
-  const handleLogin = async (instagram, password) => {
-    try {
-      setLoading(true);
-      const response = await axios.post(`${API_URL}/auth/login`, {
-        instagram,
-        password
-      });
-
-      const user = response.data;
-      setCurrentUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      loadUserStats(user.id);
-    } catch (error) {
-      console.error('Error iniciando sesión:', error);
-      alert(error.response?.data?.error || 'Usuario o contraseña incorrectos');
-    } finally {
-      setLoading(false);
-    }
+  // Maneja el despliegue de los menús
+  const toggleMenu = (tab) => {
+    setShowMenu((prev) => ({ ...prev, [tab]: !prev[tab] }));
+    setActiveTab(tab);
   };
-
-  const handleCreateUser = async (userName, instagram, password) => {
-    try {
-      setLoading(true);
-      const response = await axios.post(`${API_URL}/users`, {
-        name: userName,
-        instagram,
-        password
-      });
-
-      const newUser = response.data[0];
-      setCurrentUser(newUser);
-      localStorage.setItem('currentUser', JSON.stringify(newUser));
-      loadUserStats(newUser.id);
-    } catch (error) {
-      console.error('Error creando usuario:', error);
-      alert(error.response?.data?.error || 'Error al crear usuario');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!currentUser) {
-    return (
-      <div className="App auth-app">
-        <AuthPanel
-          onLogin={handleLogin}
-          onRegister={handleCreateUser}
-          loading={loading}
-          donationUrl={DONATION_URL}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="App">
@@ -99,78 +31,69 @@ function App() {
 
       <div className="container">
         <div className="user-info">
-          <div>
-            <h2>Bienvenido, {currentUser.name}</h2>
-            {currentUser.instagram && (
-              <p className="instagram-handle">@{currentUser.instagram}</p>
-            )}
+          <label htmlFor="instagram-input"><b>Nombre de usuario de Instagram</b></label>
+          <input
+            id="instagram-input"
+            type="text"
+            placeholder="Tu usuario de Instagram"
+            value={instagram}
+            onChange={e => setInstagram(e.target.value)}
+            style={{ marginBottom: 8 }}
+          />
+          <div style={{ fontSize: '0.95em', color: '#555', marginBottom: 16 }}>
+            Este campo es para guardar tu progreso y para que otros usuarios encuentren si tienes repetidas.
           </div>
-          <button
-            className="btn-logout"
-            onClick={() => {
-              setCurrentUser(null);
-              localStorage.removeItem('currentUser');
-              setStats(null);
-            }}
-          >
-            Cambiar usuario
-          </button>
         </div>
 
         <nav className="tabs">
           <button
             className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => toggleMenu('dashboard')}
           >
             Dashboard
           </button>
           <button
             className={`tab ${activeTab === 'album' ? 'active' : ''}`}
-            onClick={() => setActiveTab('album')}
+            onClick={() => toggleMenu('album')}
           >
             Planilla
           </button>
           <button
             className={`tab ${activeTab === 'add' ? 'active' : ''}`}
-            onClick={() => setActiveTab('add')}
+            onClick={() => toggleMenu('add')}
           >
             Agregar Estampa
           </button>
           <button
             className={`tab ${activeTab === 'repeated' ? 'active' : ''}`}
-            onClick={() => setActiveTab('repeated')}
+            onClick={() => toggleMenu('repeated')}
           >
             Repetidas
-          </button>
-          <button
-            className={`tab ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => setActiveTab('history')}
-          >
-            Historial
           </button>
         </nav>
 
         <div className="tab-content">
-          {activeTab === 'dashboard' && stats && (
-            <Dashboard stats={stats} />
+          {activeTab === 'dashboard' && showMenu.dashboard && (
+            <div>
+              <h2>Bienvenido a tu álbum Panini</h2>
+              <p>Selecciona una opción del menú para comenzar.</p>
+            </div>
           )}
-          {activeTab === 'album' && (
+          {activeTab === 'album' && showMenu.album && (
             <AlbumChecklist
-              userId={currentUser.id}
-              onCollectionChanged={() => loadUserStats(currentUser.id)}
+              instagram={instagram}
             />
           )}
-          {activeTab === 'add' && (
+          {activeTab === 'add' && showMenu.add && (
             <AddStamp
-              userId={currentUser.id}
-              onStampAdded={() => loadUserStats(currentUser.id)}
+              instagram={instagram}
             />
           )}
-          {activeTab === 'repeated' && (
-            <RepeatedStamps userId={currentUser.id} />
-          )}
-          {activeTab === 'history' && (
-            <History userId={currentUser.id} />
+          {activeTab === 'repeated' && showMenu.repeated && (
+            <RepeatedStamps
+              instagram={instagram}
+              usePlanillaFormat={true}
+            />
           )}
         </div>
 
@@ -182,7 +105,7 @@ function App() {
   );
 }
 
-function AuthPanel({ onLogin, onRegister, loading, donationUrl }) {
+export default App;
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [instagram, setInstagram] = useState('');
