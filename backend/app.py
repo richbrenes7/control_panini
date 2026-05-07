@@ -50,11 +50,15 @@ def create_user():
     """Crear nuevo usuario"""
     try:
         data = request.json
+        instagram = normalize_instagram(data.get("instagram", ""))
         user_data = {
             "name": data.get("name"),
-            "email": data.get("email"),
+            "instagram": instagram,
             "created_at": datetime.now().isoformat()
         }
+
+        if not user_data["name"] or not user_data["instagram"]:
+            return jsonify({"error": "Nombre e Instagram son requeridos"}), 400
         
         response = get_supabase().table("users").insert(user_data).execute()
         return jsonify(response.data), 201
@@ -132,6 +136,117 @@ def remove_stamp():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+# ======================= ESTAMPAS REPETIDAS =======================
+@app.route('/api/repeated/user/<user_id>', methods=['GET'])
+def get_user_repeated_stamps(user_id):
+    """Obtener estampas repetidas del usuario"""
+    try:
+        repeated = get_supabase().table("repeated_stamps").select("*").eq("user_id", user_id).order("stamp_code").execute().data
+        return jsonify(repeated), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/repeated/add', methods=['POST'])
+def add_repeated_stamp():
+    """Agregar o actualizar una estampa repetida"""
+    try:
+        data = request.json
+        user_id = data.get("user_id")
+        stamp_code = str(data.get("stamp_code", "")).upper().strip()
+        quantity = int(data.get("quantity", 1))
+        notes = data.get("notes", "")
+
+        if not user_id or not validate_stamp_code(stamp_code):
+            return jsonify({"error": "Datos de estampa repetida inválidos"}), 400
+
+        existing = get_supabase().table("repeated_stamps").select("*").eq("user_id", user_id).eq("stamp_code", stamp_code).execute().data
+
+        if existing:
+            repeated_id = existing[0]["id"]
+            response = get_supabase().table("repeated_stamps").update({
+                "quantity": quantity,
+                "notes": notes,
+                "updated_at": datetime.now().isoformat()
+            }).eq("id", repeated_id).execute()
+        else:
+            response = get_supabase().table("repeated_stamps").insert({
+                "user_id": user_id,
+                "stamp_code": stamp_code,
+                "quantity": quantity,
+                "notes": notes,
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            }).execute()
+
+        log_action(user_id, "REPEATED", stamp_code, quantity)
+        return jsonify({"message": "Estampa repetida guardada", "data": response.data}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/repeated/<repeated_id>', methods=['DELETE'])
+def remove_repeated_stamp(repeated_id):
+    """Eliminar una estampa repetida"""
+    try:
+        data = request.json or {}
+        user_id = data.get("user_id")
+        query = get_supabase().table("repeated_stamps").delete().eq("id", repeated_id)
+        if user_id:
+            query = query.eq("user_id", user_id)
+        query.execute()
+        return jsonify({"message": "Estampa repetida eliminada"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/repeated/matches/<user_id>', methods=['GET'])
+def get_exchange_matches(user_id):
+    """Encontrar usuarios con intercambios mutuamente útiles"""
+    try:
+        db = get_supabase()
+        users = db.table("users").select("id,name,instagram").neq("id", user_id).execute().data
+        my_collection = db.table("stamps").select("stamp_code").eq("user_id", user_id).execute().data
+        my_repeated = db.table("repeated_stamps").select("stamp_code,quantity").eq("user_id", user_id).execute().data
+        all_repeated = db.table("repeated_stamps").select("user_id,stamp_code,quantity").neq("user_id", user_id).execute().data
+        all_stamps = db.table("stamps").select("user_id,stamp_code").neq("user_id", user_id).execute().data
+
+        my_collection_codes = {stamp["stamp_code"] for stamp in my_collection}
+        my_repeated_codes = {stamp["stamp_code"] for stamp in my_repeated}
+        users_by_id = {user["id"]: user for user in users}
+        other_collections = {}
+        other_repeated = {}
+
+        for stamp in all_stamps:
+            other_collections.setdefault(stamp["user_id"], set()).add(stamp["stamp_code"])
+
+        for stamp in all_repeated:
+            other_repeated.setdefault(stamp["user_id"], []).append(stamp)
+
+        matches = []
+        for other_user_id, repeated_stamps in other_repeated.items():
+            user = users_by_id.get(other_user_id)
+            if not user:
+                continue
+
+            other_collection_codes = other_collections.get(other_user_id, set())
+            can_receive = [
+                stamp for stamp in repeated_stamps
+                if stamp["stamp_code"] not in my_collection_codes
+            ]
+            can_give = [
+                stamp for stamp in my_repeated
+                if stamp["stamp_code"] in my_repeated_codes and stamp["stamp_code"] not in other_collection_codes
+            ]
+
+            if can_receive and can_give:
+                matches.append({
+                    "user": user,
+                    "you_can_give": can_give,
+                    "you_can_receive": can_receive
+                })
+
+        return jsonify(matches), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 @app.route('/api/stamps/user/<user_id>', methods=['GET'])
 def get_user_stamps(user_id):
     """Obtener todas las estampas del usuario"""
@@ -201,6 +316,10 @@ def validate_stamp_code(code):
         return False
     except:
         return False
+
+def normalize_instagram(instagram):
+    """Normalizar usuario de Instagram sin @ inicial."""
+    return str(instagram).strip().lstrip("@").lower()
 
 def generate_all_stamp_codes():
     """Generar lista de todos los códigos de estampas válidos"""

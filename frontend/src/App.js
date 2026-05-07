@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import AddStamp from './components/AddStamp';
 import History from './components/History';
+import RepeatedStamps from './components/RepeatedStamps';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -20,25 +21,26 @@ function App() {
       setCurrentUser(JSON.parse(savedUser));
       loadUserStats(JSON.parse(savedUser).id);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Cargar estadísticas del usuario
-  const loadUserStats = async (userId) => {
+  const loadUserStats = useCallback(async (userId) => {
     try {
       const response = await axios.get(`${API_URL}/stats/${userId}`);
       setStats(response.data);
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
     }
-  };
+  }, []);
 
   // Crear nuevo usuario
-  const handleCreateUser = async (userName, userEmail) => {
+  const handleCreateUser = async (userName, instagram) => {
     try {
       setLoading(true);
       const response = await axios.post(`${API_URL}/users`, {
         name: userName,
-        email: userEmail
+        instagram
       });
       
       const newUser = response.data[0];
@@ -48,34 +50,6 @@ function App() {
     } catch (error) {
       console.error('Error creando usuario:', error);
       alert('Error al crear usuario');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Agregar estampa
-  const handleAddStamp = async (stampCode, team, type, quantity, notes) => {
-    if (!currentUser) {
-      alert('Por favor selecciona un usuario primero');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await axios.post(`${API_URL}/stamps/add`, {
-        user_id: currentUser.id,
-        stamp_code: stampCode,
-        team_id: team,
-        type: type,
-        quantity: quantity,
-        notes: notes
-      });
-
-      alert('Estampa agregada correctamente');
-      loadUserStats(currentUser.id);
-    } catch (error) {
-      console.error('Error agregando estampa:', error);
-      alert('Error al agregar estampa');
     } finally {
       setLoading(false);
     }
@@ -96,7 +70,12 @@ function App() {
         ) : (
           <>
             <div className="user-info">
-              <h2>Bienvenido, {currentUser.name}</h2>
+              <div>
+                <h2>Bienvenido, {currentUser.name}</h2>
+                {currentUser.instagram && (
+                  <p className="instagram-handle">@{currentUser.instagram}</p>
+                )}
+              </div>
               <button 
                 className="btn-logout"
                 onClick={() => {
@@ -123,6 +102,12 @@ function App() {
                 ➕ Agregar Estampa
               </button>
               <button
+                className={`tab ${activeTab === 'repeated' ? 'active' : ''}`}
+                onClick={() => setActiveTab('repeated')}
+              >
+                Repetidas
+              </button>
+              <button
                 className={`tab ${activeTab === 'history' ? 'active' : ''}`}
                 onClick={() => setActiveTab('history')}
               >
@@ -135,7 +120,13 @@ function App() {
                 <Dashboard stats={stats} />
               )}
               {activeTab === 'add' && (
-                <AddStamp onAddStamp={handleAddStamp} loading={loading} />
+                <AddStamp
+                  userId={currentUser.id}
+                  onStampAdded={() => loadUserStats(currentUser.id)}
+                />
+              )}
+              {activeTab === 'repeated' && (
+                <RepeatedStamps userId={currentUser.id} />
               )}
               {activeTab === 'history' && (
                 <History userId={currentUser.id} />
@@ -150,14 +141,14 @@ function App() {
 
 function UserSelector({ onSelectUser, loading }) {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [instagram, setInstagram] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (name && email) {
-      onSelectUser(name, email);
+    if (name && instagram) {
+      onSelectUser(name, instagram);
       setName('');
-      setEmail('');
+      setInstagram('');
     }
   };
 
@@ -174,10 +165,10 @@ function UserSelector({ onSelectUser, loading }) {
             required
           />
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Usuario de Instagram"
+            value={instagram}
+            onChange={(e) => setInstagram(e.target.value)}
             required
           />
           <button type="submit" disabled={loading}>

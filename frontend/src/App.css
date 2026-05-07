@@ -59,6 +59,12 @@ body {
   color: #333;
 }
 
+.instagram-handle {
+  color: #667eea;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
 .btn-logout {
   background: #ff6b6b;
   color: white;

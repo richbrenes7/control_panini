@@ -74,7 +74,7 @@ function AddStamp({ userId, onStampAdded }) {
             value={stampCode}
             onChange={(e) => setStampCode(e.target.value.toUpperCase())}
             placeholder="ej: 00, 001, CC1"
-            maxLength="3"
+            maxLength="4"
           />
           <small>Ej: 00-19 (especiales), 001-960 (equipos), CC1-CC14 (coleccionistas)</small>
         </div>
