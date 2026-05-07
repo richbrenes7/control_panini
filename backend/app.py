@@ -9,7 +9,15 @@ from werkzeug.security import check_password_hash, generate_password_hash
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "FLASK_CORS_ORIGINS",
+        "https://control-paniniapp.netlify.app,https://control-panini.netlify.app,http://localhost:3000"
+    ).split(",")
+    if origin.strip()
+]
+CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=False)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://trmulthiyjshlxiqpebu.supabase.co").strip()
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
