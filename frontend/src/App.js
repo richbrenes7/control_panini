@@ -3,6 +3,7 @@ import axios from 'axios';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import AddStamp from './components/AddStamp';
+import AlbumChecklist from './components/AlbumChecklist';
 import History from './components/History';
 import RepeatedStamps from './components/RepeatedStamps';
 
@@ -124,6 +125,12 @@ function App() {
             Dashboard
           </button>
           <button
+            className={`tab ${activeTab === 'album' ? 'active' : ''}`}
+            onClick={() => setActiveTab('album')}
+          >
+            Planilla
+          </button>
+          <button
             className={`tab ${activeTab === 'add' ? 'active' : ''}`}
             onClick={() => setActiveTab('add')}
           >
@@ -146,6 +153,12 @@ function App() {
         <div className="tab-content">
           {activeTab === 'dashboard' && stats && (
             <Dashboard stats={stats} />
+          )}
+          {activeTab === 'album' && (
+            <AlbumChecklist
+              userId={currentUser.id}
+              onCollectionChanged={() => loadUserStats(currentUser.id)}
+            />
           )}
           {activeTab === 'add' && (
             <AddStamp

@@ -58,6 +58,14 @@ CATEGORIES = {
     }
 }
 
+COUNTRY_PREFIXES = [
+    "MEX", "RSA", "KOR", "CZE", "CAN", "BIH", "QAT", "SUI", "BRA", "MAR",
+    "HAI", "SCO", "USA", "PAR", "AUS", "TUR", "GER", "CUW", "CIV", "ECU",
+    "NED", "JPN", "SWE", "TUN", "BEL", "EGY", "IRN", "NZL", "ESP", "CPV",
+    "KSA", "URU", "FRA", "SEN", "IRQ", "NOR", "ARG", "ALG", "AUT", "JOR",
+    "POR", "COD", "UZB", "COL", "ENG", "CRO", "GHA", "PAN"
+]
+
 # ======================= RUTAS DE SALUD =======================
 @app.route('/', methods=['GET'])
 def root():
@@ -143,9 +151,10 @@ def add_stamp():
     """Agregar estampa a la colección"""
     try:
         data = request.json
+        stamp_code = str(data.get("stamp_code", "")).upper().strip()
         stamp_data = {
             "user_id": data.get("user_id"),
-            "stamp_code": data.get("stamp_code"),  # ej: "00", "001", "CC1"
+            "stamp_code": stamp_code,  # ej: "FWC", "MEX1", "CC1"
             "team_id": data.get("team_id"),  # ej: 1-48 (países)
             "type": data.get("type"),  # "shield", "group", "player"
             "quantity": data.get("quantity", 1),
@@ -455,6 +464,53 @@ def log_action(user_id, action, stamp_code, quantity):
         get_supabase().table("history").insert(log_data).execute()
     except Exception as e:
         print(f"Error al registrar historial: {e}")
+
+def validate_stamp_code(code):
+    """Validar codigos de la planilla Mundial 2026."""
+    try:
+        normalized_code = str(code).upper().strip()
+
+        if normalized_code in ["FWC", "00"]:
+            return True
+
+        if normalized_code.startswith("FWC"):
+            fwc_num = int(normalized_code[3:])
+            return 1 <= fwc_num <= 19
+
+        if normalized_code.startswith("CC"):
+            cc_num = int(normalized_code[2:])
+            return 1 <= cc_num <= 14
+
+        for prefix in COUNTRY_PREFIXES:
+            if normalized_code.startswith(prefix):
+                stamp_num = int(normalized_code[len(prefix):])
+                return 1 <= stamp_num <= 20
+
+        stamp_num = int(normalized_code)
+        return 1 <= stamp_num <= 960
+    except:
+        return False
+
+def generate_all_stamp_codes():
+    """Generar codigos de la planilla usada por la app."""
+    codes = ["FWC", "00"]
+    codes.extend([f"FWC{i}" for i in range(1, 20)])
+    for prefix in COUNTRY_PREFIXES:
+        codes.extend([f"{prefix}{i}" for i in range(1, 21)])
+    codes.extend([f"CC{i}" for i in range(1, 15)])
+    return codes
+
+def is_special(code):
+    """Determinar si una estampa es especial."""
+    try:
+        normalized_code = str(code).upper().strip()
+        return (
+            normalized_code in ["FWC", "00"] or
+            normalized_code.startswith("FWC") or
+            normalized_code.startswith("CC")
+        )
+    except:
+        return False
 
 if __name__ == '__main__':
     app.run(debug=True, port=int(os.getenv("PORT", 5000)))

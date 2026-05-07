@@ -97,7 +97,7 @@ function RepeatedStamps({ userId }) {
               value={stampCode}
               onChange={(event) => setStampCode(event.target.value.toUpperCase())}
               placeholder="ej: 001, CC1"
-              maxLength="4"
+              maxLength="6"
               required
             />
           </div>

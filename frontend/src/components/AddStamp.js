@@ -73,10 +73,10 @@ function AddStamp({ userId, onStampAdded }) {
             type="text"
             value={stampCode}
             onChange={(e) => setStampCode(e.target.value.toUpperCase())}
-            placeholder="ej: 00, 001, CC1"
-            maxLength="4"
+            placeholder="ej: FWC, MEX1, FWC9, CC1"
+            maxLength="6"
           />
-          <small>Ej: 00-19 (especiales), 001-960 (equipos), CC1-CC14 (coleccionistas)</small>
+          <small>Ej: FWC, 00, FWC1-FWC19, MEX1-MEX20, CC1-CC14</small>
         </div>
 
         <div className="form-group">
