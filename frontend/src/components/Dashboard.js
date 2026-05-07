@@ -1,8 +1,8 @@
 import React from 'react';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import './Dashboard.css';
 
-function Dashboard({ stats, userId }) {
+function Dashboard({ stats }) {
   if (!stats) {
     return <div className="dashboard-loading">Cargando estadísticas...</div>;
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import './History.css';
 
@@ -8,13 +8,7 @@ function History({ userId }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (userId) {
-      loadHistory();
-    }
-  }, [userId]);
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/history/${userId}`);
@@ -24,7 +18,13 @@ function History({ userId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      loadHistory();
+    }
+  }, [userId, loadHistory]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString('es-ES');
