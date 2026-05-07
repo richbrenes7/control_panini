@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-from supabase import create_client, Client
+from supabase import Client, create_client
 from datetime import datetime
 
 load_dotenv()
@@ -10,11 +10,18 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Inicializar Supabase
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://trmulthiyjshlxiqpebu.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "sb_publishable_HfCcv97LN_44odIcm6mS1g_2m5_2z3e")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://trmulthiyjshlxiqpebu.supabase.co").strip()
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
+supabase: Client | None = None
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+def get_supabase() -> Client:
+    """Create the Supabase client lazily so Gunicorn can boot even if env vars are missing."""
+    global supabase
+    if supabase is None:
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be configured")
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    return supabase
 
 # Definición de categorías ABC
 CATEGORIES = {
@@ -49,7 +56,7 @@ def create_user():
             "created_at": datetime.now().isoformat()
         }
         
-        response = supabase.table("users").insert(user_data).execute()
+        response = get_supabase().table("users").insert(user_data).execute()
         return jsonify(response.data), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -58,10 +65,10 @@ def create_user():
 def get_user(user_id):
     """Obtener datos del usuario y resumen de colección"""
     try:
-        user = supabase.table("users").select("*").eq("id", user_id).execute().data[0]
+        user = get_supabase().table("users").select("*").eq("id", user_id).execute().data[0]
         
         # Obtener estadísticas
-        stamps = supabase.table("stamps").select("*").eq("user_id", user_id).execute().data
+        stamps = get_supabase().table("stamps").select("*").eq("user_id", user_id).execute().data
         
         total_stamps = len(stamps)
         total_unique = len(set(s['stamp_code'] for s in stamps))
@@ -97,7 +104,7 @@ def add_stamp():
         if not validate_stamp_code(stamp_data["stamp_code"]):
             return jsonify({"error": "Código de estampa inválido"}), 400
         
-        response = supabase.table("stamps").insert(stamp_data).execute()
+        response = get_supabase().table("stamps").insert(stamp_data).execute()
         
         # Registrar en historial
         log_action(data.get("user_id"), "ADD", stamp_data["stamp_code"], data.get("quantity", 1))
@@ -117,7 +124,7 @@ def remove_stamp():
         user_id = data.get("user_id")
         stamp_id = data.get("stamp_id")
         
-        supabase.table("stamps").delete().eq("id", stamp_id).eq("user_id", user_id).execute()
+        get_supabase().table("stamps").delete().eq("id", stamp_id).eq("user_id", user_id).execute()
         
         log_action(user_id, "REMOVE", stamp_id, 1)
         
@@ -129,7 +136,7 @@ def remove_stamp():
 def get_user_stamps(user_id):
     """Obtener todas las estampas del usuario"""
     try:
-        stamps = supabase.table("stamps").select("*").eq("user_id", user_id).execute().data
+        stamps = get_supabase().table("stamps").select("*").eq("user_id", user_id).execute().data
         return jsonify(stamps), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -138,7 +145,7 @@ def get_user_stamps(user_id):
 def get_missing_stamps(user_id):
     """Obtener estampas faltantes"""
     try:
-        stamps = supabase.table("stamps").select("stamp_code").eq("user_id", user_id).execute().data
+        stamps = get_supabase().table("stamps").select("stamp_code").eq("user_id", user_id).execute().data
         collected_codes = set(s['stamp_code'] for s in stamps)
         
         all_codes = generate_all_stamp_codes()
@@ -157,7 +164,7 @@ def get_missing_stamps(user_id):
 def get_stats(user_id):
     """Obtener estadísticas completas"""
     try:
-        stamps = supabase.table("stamps").select("*").eq("user_id", user_id).execute().data
+        stamps = get_supabase().table("stamps").select("*").eq("user_id", user_id).execute().data
         stats = calculate_stats(stamps)
         return jsonify(stats), 200
     except Exception as e:
@@ -167,7 +174,7 @@ def get_stats(user_id):
 def get_history(user_id):
     """Obtener historial de cambios"""
     try:
-        history = supabase.table("history").select("*").eq("user_id", user_id).order("created_at", desc=True).execute().data
+        history = get_supabase().table("history").select("*").eq("user_id", user_id).order("created_at", desc=True).execute().data
         return jsonify(history), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -271,9 +278,9 @@ def log_action(user_id, action, stamp_code, quantity):
             "quantity": quantity,
             "created_at": datetime.now().isoformat()
         }
-        supabase.table("history").insert(log_data).execute()
+        get_supabase().table("history").insert(log_data).execute()
     except Exception as e:
         print(f"Error al registrar historial: {e}")
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=int(os.getenv("PORT", 5000)))
