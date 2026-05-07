@@ -7,7 +7,7 @@ import History from './components/History';
 import RepeatedStamps from './components/RepeatedStamps';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const DONATION_URL = process.env.REACT_APP_DONATION_URL || 'https://www.buymeacoffee.com/';
+const DONATION_URL = process.env.REACT_APP_DONATION_URL || 'https://www.paypal.me/RichBrenes7';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
