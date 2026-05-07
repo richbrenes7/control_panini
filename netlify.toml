@@ -5,7 +5,13 @@
 
 [build.environment]
   NODE_VERSION = "18"
-  REACT_APP_API_URL = "https://control-panini-api.onrender.com/api"
+  REACT_APP_API_URL = "/api"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://control-panini-api.onrender.com/api/:splat"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/*"

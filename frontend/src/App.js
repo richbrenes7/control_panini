@@ -6,7 +6,7 @@ import AddStamp from './components/AddStamp';
 import History from './components/History';
 import RepeatedStamps from './components/RepeatedStamps';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || '/api';
 const DONATION_URL = process.env.REACT_APP_DONATION_URL || 'mailto:richbrenes795@gmail.com?subject=Donaci%C3%B3n%20Control%20Panini';
 
 function App() {
