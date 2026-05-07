@@ -17,7 +17,17 @@ cors_origins = [
     ).split(",")
     if origin.strip()
 ]
-CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=False)
+CORS(app, resources={r"/*": {"origins": cors_origins}}, supports_credentials=False)
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin")
+    if origin in cors_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    return response
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://trmulthiyjshlxiqpebu.supabase.co").strip()
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
