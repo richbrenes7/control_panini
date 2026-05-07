@@ -18,7 +18,7 @@ const STAMP_TYPES = [
   { value: 'player', label: 'Jugador' }
 ];
 
-function AddStamp({ userId, onStampAdded }) {
+function AddStamp({ instagram, onStampAdded }) {
   const [stampCode, setStampCode] = useState('');
   const [teamId, setTeamId] = useState(1);
   const [type, setType] = useState('player');
@@ -29,7 +29,7 @@ function AddStamp({ userId, onStampAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!stampCode || !userId) {
+    if (!stampCode || !instagram) {
       setMessage('Por favor completa todos los campos');
       return;
     }
@@ -37,7 +37,7 @@ function AddStamp({ userId, onStampAdded }) {
     try {
       setLoading(true);
       await axios.post(`${API_URL}/stamps/add`, {
-        user_id: userId,
+        user_id: instagram,
         stamp_code: stampCode,
         team_id: teamId,
         type: type,

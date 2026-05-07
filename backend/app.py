@@ -1,9 +1,12 @@
 import os
+import uuid
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from supabase import Client, create_client
 from datetime import datetime
+from functools import wraps
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import check_password_hash, generate_password_hash
 
 load_dotenv()
@@ -31,6 +34,8 @@ def add_cors_headers(response):
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://trmulthiyjshlxiqpebu.supabase.co").strip()
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
+AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", SUPABASE_KEY or "change-me-in-prod")
+AUTH_TOKEN_MAX_AGE = int(os.getenv("AUTH_TOKEN_MAX_AGE", "604800"))
 supabase: Client | None = None
 
 def get_supabase() -> Client:
@@ -41,6 +46,40 @@ def get_supabase() -> Client:
             raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be configured")
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
     return supabase
+
+def get_auth_serializer() -> URLSafeTimedSerializer:
+    return URLSafeTimedSerializer(AUTH_SECRET_KEY, salt="control-panini-auth")
+
+def create_access_token(user_id: str) -> str:
+    return get_auth_serializer().dumps({"user_id": user_id})
+
+def parse_access_token(token: str) -> str:
+    payload = get_auth_serializer().loads(token, max_age=AUTH_TOKEN_MAX_AGE)
+    return str(payload.get("user_id", "")).strip()
+
+def require_auth(route_handler):
+    @wraps(route_handler)
+    def wrapper(*args, **kwargs):
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return jsonify({"error": "Token requerido"}), 401
+
+        token = auth_header.split(" ", 1)[1].strip()
+        if not token:
+            return jsonify({"error": "Token inválido"}), 401
+
+        try:
+            user_id = parse_access_token(token)
+        except (BadSignature, SignatureExpired):
+            return jsonify({"error": "Sesión inválida o expirada"}), 401
+
+        if not user_id:
+            return jsonify({"error": "Sesión inválida"}), 401
+
+        request.current_user_id = user_id
+        return route_handler(*args, **kwargs)
+
+    return wrapper
 
 # Definición de categorías ABC
 CATEGORIES = {
@@ -80,21 +119,25 @@ def health():
 def create_user():
     """Crear nuevo usuario"""
     try:
-        data = request.json
+        data = request.json or {}
         instagram = normalize_instagram(data.get("instagram", ""))
+        email = str(data.get("email", "")).strip().lower()
         password = data.get("password", "")
         user_data = {
             "name": data.get("name"),
+            "email": email,
             "instagram": instagram,
             "password_hash": generate_password_hash(password),
             "created_at": datetime.now().isoformat()
         }
 
-        if not user_data["name"] or not user_data["instagram"] or not password:
-            return jsonify({"error": "Nombre, Instagram y contraseña son requeridos"}), 400
+        if not user_data["name"] or not user_data["instagram"] or not user_data["email"] or not password:
+            return jsonify({"error": "Nombre, correo, Instagram y contraseña son requeridos"}), 400
         
         response = get_supabase().table("users").insert(user_data).execute()
-        return jsonify([sanitize_user(user) for user in response.data]), 201
+        created_user = sanitize_user(response.data[0])
+        token = create_access_token(created_user["id"])
+        return jsonify({"user": created_user, "token": token}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -102,14 +145,19 @@ def create_user():
 def login():
     """Iniciar sesión con usuario de Instagram y contraseña"""
     try:
-        data = request.json
+        data = request.json or {}
         instagram = normalize_instagram(data.get("instagram", ""))
+        email = str(data.get("email", "")).strip().lower()
         password = data.get("password", "")
 
-        if not instagram or not password:
-            return jsonify({"error": "Instagram y contraseña son requeridos"}), 400
+        if (not instagram and not email) or not password:
+            return jsonify({"error": "Instagram/correo y contraseña son requeridos"}), 400
 
-        users = get_supabase().table("users").select("*").eq("instagram", instagram).execute().data
+        users = []
+        if instagram:
+            users = get_supabase().table("users").select("*").eq("instagram", instagram).execute().data
+        if not users and email:
+            users = get_supabase().table("users").select("*").eq("email", email).execute().data
         if not users:
             return jsonify({"error": "Usuario o contraseña incorrectos"}), 401
 
@@ -118,7 +166,48 @@ def login():
         if not password_hash or not check_password_hash(password_hash, password):
             return jsonify({"error": "Usuario o contraseña incorrectos"}), 401
 
-        return jsonify(sanitize_user(user)), 200
+        clean_user = sanitize_user(user)
+        token = create_access_token(clean_user["id"])
+        return jsonify({"user": clean_user, "token": token}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    """Restablecer contraseña validando correo + Instagram."""
+    try:
+        data = request.json or {}
+        email = str(data.get("email", "")).strip().lower()
+        instagram = normalize_instagram(data.get("instagram", ""))
+        new_password = data.get("new_password", "")
+
+        if not email or not instagram or not new_password:
+            return jsonify({"error": "Correo, Instagram y nueva contraseña son requeridos"}), 400
+
+        users = get_supabase().table("users").select("id").eq("email", email).eq("instagram", instagram).execute().data
+        if not users:
+            return jsonify({"error": "No existe un usuario con ese correo e Instagram"}), 404
+
+        user_id = users[0]["id"]
+        get_supabase().table("users").update({
+            "password_hash": generate_password_hash(new_password),
+            "updated_at": datetime.now().isoformat()
+        }).eq("id", user_id).execute()
+
+        return jsonify({"message": "Contraseña actualizada correctamente"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/auth/me', methods=['GET'])
+@require_auth
+def me():
+    """Validar sesión y obtener usuario actual."""
+    try:
+        user_id = request.current_user_id
+        users = get_supabase().table("users").select("*").eq("id", user_id).limit(1).execute().data
+        if not users:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+        return jsonify({"user": sanitize_user(users[0])}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -126,10 +215,14 @@ def login():
 def get_user(user_id):
     """Obtener datos del usuario y resumen de colección"""
     try:
-        user = get_supabase().table("users").select("*").eq("id", user_id).execute().data[0]
+        resolved_user_id = resolve_user_id(user_id)
+        if not resolved_user_id:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        user = get_supabase().table("users").select("*").eq("id", resolved_user_id).execute().data[0]
         
         # Obtener estadísticas
-        stamps = get_supabase().table("stamps").select("*").eq("user_id", user_id).execute().data
+        stamps = get_supabase().table("stamps").select("*").eq("user_id", resolved_user_id).execute().data
         
         total_stamps = len(stamps)
         total_unique = len(set(s['stamp_code'] for s in stamps))
@@ -150,10 +243,14 @@ def get_user(user_id):
 def add_stamp():
     """Agregar estampa a la colección"""
     try:
-        data = request.json
+        data = request.json or {}
+        resolved_user_id = resolve_user_id(data.get("user_id"), create_if_missing=True)
+        if not resolved_user_id:
+            return jsonify({"error": "Usuario inválido"}), 400
+
         stamp_code = str(data.get("stamp_code", "")).upper().strip()
         stamp_data = {
-            "user_id": data.get("user_id"),
+            "user_id": resolved_user_id,
             "stamp_code": stamp_code,  # ej: "FWC", "MEX1", "CC1"
             "team_id": data.get("team_id"),  # ej: 1-48 (países)
             "type": data.get("type"),  # "shield", "group", "player"
@@ -169,7 +266,7 @@ def add_stamp():
         response = get_supabase().table("stamps").insert(stamp_data).execute()
         
         # Registrar en historial
-        log_action(data.get("user_id"), "ADD", stamp_data["stamp_code"], data.get("quantity", 1))
+        log_action(resolved_user_id, "ADD", stamp_data["stamp_code"], data.get("quantity", 1))
         
         return jsonify({
             "message": "Estampa agregada",
@@ -182,9 +279,12 @@ def add_stamp():
 def remove_stamp():
     """Eliminar estampa de la colección"""
     try:
-        data = request.json
-        user_id = data.get("user_id")
+        data = request.json or {}
+        user_id = resolve_user_id(data.get("user_id"))
         stamp_id = data.get("stamp_id")
+
+        if not user_id:
+            return jsonify({"error": "Usuario inválido"}), 400
         
         get_supabase().table("stamps").delete().eq("id", stamp_id).eq("user_id", user_id).execute()
         
@@ -199,7 +299,11 @@ def remove_stamp():
 def get_user_repeated_stamps(user_id):
     """Obtener estampas repetidas del usuario"""
     try:
-        repeated = get_supabase().table("repeated_stamps").select("*").eq("user_id", user_id).order("stamp_code").execute().data
+        resolved_user_id = resolve_user_id(user_id)
+        if not resolved_user_id:
+            return jsonify([]), 200
+
+        repeated = get_supabase().table("repeated_stamps").select("*").eq("user_id", resolved_user_id).order("stamp_code").execute().data
         return jsonify(repeated), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -208,8 +312,8 @@ def get_user_repeated_stamps(user_id):
 def add_repeated_stamp():
     """Agregar o actualizar una estampa repetida"""
     try:
-        data = request.json
-        user_id = data.get("user_id")
+        data = request.json or {}
+        user_id = resolve_user_id(data.get("user_id"), create_if_missing=True)
         stamp_code = str(data.get("stamp_code", "")).upper().strip()
         quantity = int(data.get("quantity", 1))
         notes = data.get("notes", "")
@@ -249,7 +353,10 @@ def remove_repeated_stamp(repeated_id):
         user_id = data.get("user_id")
         query = get_supabase().table("repeated_stamps").delete().eq("id", repeated_id)
         if user_id:
-            query = query.eq("user_id", user_id)
+            resolved_user_id = resolve_user_id(user_id)
+            if not resolved_user_id:
+                return jsonify({"error": "Usuario inválido"}), 400
+            query = query.eq("user_id", resolved_user_id)
         query.execute()
         return jsonify({"message": "Estampa repetida eliminada"}), 200
     except Exception as e:
@@ -259,12 +366,16 @@ def remove_repeated_stamp(repeated_id):
 def get_exchange_matches(user_id):
     """Encontrar usuarios con intercambios mutuamente útiles"""
     try:
+        resolved_user_id = resolve_user_id(user_id)
+        if not resolved_user_id:
+            return jsonify([]), 200
+
         db = get_supabase()
-        users = db.table("users").select("id,name,instagram").neq("id", user_id).execute().data
-        my_collection = db.table("stamps").select("stamp_code").eq("user_id", user_id).execute().data
-        my_repeated = db.table("repeated_stamps").select("stamp_code,quantity").eq("user_id", user_id).execute().data
-        all_repeated = db.table("repeated_stamps").select("user_id,stamp_code,quantity").neq("user_id", user_id).execute().data
-        all_stamps = db.table("stamps").select("user_id,stamp_code").neq("user_id", user_id).execute().data
+        users = db.table("users").select("id,name,instagram").neq("id", resolved_user_id).execute().data
+        my_collection = db.table("stamps").select("stamp_code").eq("user_id", resolved_user_id).execute().data
+        my_repeated = db.table("repeated_stamps").select("stamp_code,quantity").eq("user_id", resolved_user_id).execute().data
+        all_repeated = db.table("repeated_stamps").select("user_id,stamp_code,quantity").neq("user_id", resolved_user_id).execute().data
+        all_stamps = db.table("stamps").select("user_id,stamp_code").neq("user_id", resolved_user_id).execute().data
 
         my_collection_codes = {stamp["stamp_code"] for stamp in my_collection}
         my_repeated_codes = {stamp["stamp_code"] for stamp in my_repeated}
@@ -309,7 +420,11 @@ def get_exchange_matches(user_id):
 def get_user_stamps(user_id):
     """Obtener todas las estampas del usuario"""
     try:
-        stamps = get_supabase().table("stamps").select("*").eq("user_id", user_id).execute().data
+        resolved_user_id = resolve_user_id(user_id)
+        if not resolved_user_id:
+            return jsonify([]), 200
+
+        stamps = get_supabase().table("stamps").select("*").eq("user_id", resolved_user_id).execute().data
         return jsonify(stamps), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -318,7 +433,16 @@ def get_user_stamps(user_id):
 def get_missing_stamps(user_id):
     """Obtener estampas faltantes"""
     try:
-        stamps = get_supabase().table("stamps").select("stamp_code").eq("user_id", user_id).execute().data
+        resolved_user_id = resolve_user_id(user_id)
+        if not resolved_user_id:
+            all_codes = generate_all_stamp_codes()
+            return jsonify({
+                "missing_count": len(all_codes),
+                "missing_stamps": all_codes,
+                "completion_percent": 0
+            }), 200
+
+        stamps = get_supabase().table("stamps").select("stamp_code").eq("user_id", resolved_user_id).execute().data
         collected_codes = set(s['stamp_code'] for s in stamps)
         
         all_codes = generate_all_stamp_codes()
@@ -337,7 +461,11 @@ def get_missing_stamps(user_id):
 def get_stats(user_id):
     """Obtener estadísticas completas"""
     try:
-        stamps = get_supabase().table("stamps").select("*").eq("user_id", user_id).execute().data
+        resolved_user_id = resolve_user_id(user_id)
+        if not resolved_user_id:
+            return jsonify(calculate_stats([])), 200
+
+        stamps = get_supabase().table("stamps").select("*").eq("user_id", resolved_user_id).execute().data
         stats = calculate_stats(stamps)
         return jsonify(stats), 200
     except Exception as e:
@@ -347,7 +475,11 @@ def get_stats(user_id):
 def get_history(user_id):
     """Obtener historial de cambios"""
     try:
-        history = get_supabase().table("history").select("*").eq("user_id", user_id).order("created_at", desc=True).execute().data
+        resolved_user_id = resolve_user_id(user_id)
+        if not resolved_user_id:
+            return jsonify([]), 200
+
+        history = get_supabase().table("history").select("*").eq("user_id", resolved_user_id).order("created_at", desc=True).execute().data
         return jsonify(history), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -378,6 +510,46 @@ def validate_stamp_code(code):
 def normalize_instagram(instagram):
     """Normalizar usuario de Instagram sin @ inicial."""
     return str(instagram).strip().lstrip("@").lower()
+
+def is_uuid_value(value):
+    """Validar si el valor tiene formato UUID."""
+    try:
+        uuid.UUID(str(value))
+        return True
+    except Exception:
+        return False
+
+def resolve_user_id(identifier, create_if_missing=False):
+    """Resolver un identificador (UUID o Instagram) al UUID real del usuario."""
+    if identifier is None:
+        return None
+
+    raw_identifier = str(identifier).strip()
+    if not raw_identifier:
+        return None
+
+    db = get_supabase()
+
+    if is_uuid_value(raw_identifier):
+        return raw_identifier
+
+    instagram = normalize_instagram(raw_identifier)
+    users = db.table("users").select("id").eq("instagram", instagram).limit(1).execute().data
+    if users:
+        return users[0]["id"]
+
+    if not create_if_missing:
+        return None
+
+    created = db.table("users").insert({
+        "name": instagram,
+        "instagram": instagram,
+        "created_at": datetime.now().isoformat()
+    }).execute().data
+    if created:
+        return created[0]["id"]
+
+    return None
 
 def sanitize_user(user):
     """Remover datos sensibles antes de responder al frontend."""
