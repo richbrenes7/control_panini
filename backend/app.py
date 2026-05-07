@@ -41,6 +41,10 @@ CATEGORIES = {
 }
 
 # ======================= RUTAS DE SALUD =======================
+@app.route('/', methods=['GET'])
+def root():
+    return jsonify({"status": "ok", "message": "Control Panini API"}), 200
+
 @app.route('/api/health', methods=['GET'])
 def health():
     return jsonify({"status": "ok", "message": "Control Panini API"}), 200
