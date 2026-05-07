@@ -193,7 +193,7 @@ function AuthPanel({ onLogin, onRegister, loading, donationUrl }) {
   return (
     <main className="auth-shell">
       <section className="login-card">
-        <h1>USER LOGIN</h1>
+        <h1>Inicio de sesión</h1>
 
         <form onSubmit={handleSubmit} className="login-form">
           {mode === 'register' && (

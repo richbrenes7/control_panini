@@ -22,6 +22,7 @@ body {
 
 .auth-app {
   max-width: none;
+  background: #052d30;
 }
 
 .app-header {
@@ -135,6 +136,7 @@ body {
   justify-content: center;
   align-items: center;
   min-height: calc(100vh - 40px);
+  background: #052d30;
 }
 
 .login-card {
@@ -271,15 +273,15 @@ body {
 
 .license-badge {
   position: absolute;
-  left: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: 14px;
-  background: #020617;
   color: white;
-  padding: 7px 10px;
-  border-radius: 3px;
+  padding: 0;
   font-size: 0.8rem;
   font-weight: 800;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  background: transparent;
+  box-shadow: none;
 }
 
 .auth-note {
