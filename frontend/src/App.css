@@ -20,6 +20,10 @@ body {
   margin: 0 auto;
 }
 
+.auth-app {
+  max-width: none;
+}
+
 .app-header {
   background: white;
   border-radius: 12px;
@@ -124,66 +128,174 @@ body {
   }
 }
 
+.auth-shell,
 .user-selector {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+  min-height: calc(100vh - 40px);
 }
 
-.selector-card {
-  background: white;
-  padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.login-card {
+  position: relative;
+  overflow: hidden;
+  background: #052d30;
+  color: white;
+  padding: 48px 46px 52px;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
   width: 100%;
-  max-width: 400px;
+  max-width: 380px;
+  min-height: 390px;
 }
 
-.selector-card h2 {
-  margin-bottom: 20px;
-  color: #333;
+.login-card::before {
+  content: "";
+  position: absolute;
+  inset: -70px -40px auto auto;
+  width: 240px;
+  height: 360px;
+  background: linear-gradient(135deg, rgba(35, 81, 88, 0.9), rgba(5, 27, 51, 0.35));
+  transform: rotate(45deg);
+  transform-origin: center;
 }
 
-.selector-card form {
+.login-card h1 {
+  position: relative;
+  margin-bottom: 26px;
+  text-align: center;
+  font-size: 1.35rem;
+  letter-spacing: 0;
+  font-weight: 800;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.login-form {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 18px;
 }
 
-.selector-card input {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 1em;
-  transition: border 0.3s;
+.login-field {
+  display: flex;
+  align-items: center;
+  background: rgba(112, 139, 143, 0.62);
+  border-radius: 24px;
+  height: 42px;
+  overflow: hidden;
 }
 
-.selector-card input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
-}
-
-.selector-card button {
-  padding: 12px;
-  background: #667eea;
+.login-field input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
   color: white;
+  padding: 0 14px;
+  font-size: 0.95rem;
+}
+
+.login-field input::placeholder {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.login-field input:focus {
+  outline: none;
+}
+
+.field-icon {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f7f7;
+  color: #001d24;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.field-icon.lock {
+  margin-left: auto;
+}
+
+.login-form button {
+  margin-top: 18px;
+  height: 38px;
+  background: #f7f7f7;
+  color: #10292e;
   border: none;
-  border-radius: 5px;
-  font-size: 1em;
+  border-radius: 22px;
   cursor: pointer;
-  font-weight: 600;
-  transition: background 0.3s;
+  font-size: 0.95rem;
+  font-weight: 900;
 }
 
-.selector-card button:hover:not(:disabled) {
-  background: #5568d3;
+.login-form button:hover:not(:disabled) {
+  background: #ffffff;
 }
 
-.selector-card button:disabled {
-  background: #ccc;
+.login-form button:disabled {
+  opacity: 0.65;
   cursor: not-allowed;
+}
+
+.auth-actions {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.auth-actions button,
+.auth-actions a {
+  background: transparent;
+  border: 0;
+  color: #dbeafe;
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-actions a {
+  color: #9debd4;
+}
+
+.license-badge {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  background: #020617;
+  color: white;
+  padding: 7px 10px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.auth-note {
+  color: white;
+  max-width: 380px;
+  margin-top: 12px;
+  text-align: center;
+  font-size: 0.95rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+.free-version-note {
+  color: white;
+  margin-top: 18px;
+  text-align: center;
+  font-weight: 600;
 }
 
 /* Responsive */

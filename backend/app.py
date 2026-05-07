@@ -4,6 +4,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from supabase import Client, create_client
 from datetime import datetime
+from werkzeug.security import check_password_hash, generate_password_hash
 
 load_dotenv()
 
@@ -51,17 +52,43 @@ def create_user():
     try:
         data = request.json
         instagram = normalize_instagram(data.get("instagram", ""))
+        password = data.get("password", "")
         user_data = {
             "name": data.get("name"),
             "instagram": instagram,
+            "password_hash": generate_password_hash(password),
             "created_at": datetime.now().isoformat()
         }
 
-        if not user_data["name"] or not user_data["instagram"]:
-            return jsonify({"error": "Nombre e Instagram son requeridos"}), 400
+        if not user_data["name"] or not user_data["instagram"] or not password:
+            return jsonify({"error": "Nombre, Instagram y contraseña son requeridos"}), 400
         
         response = get_supabase().table("users").insert(user_data).execute()
-        return jsonify(response.data), 201
+        return jsonify([sanitize_user(user) for user in response.data]), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Iniciar sesión con usuario de Instagram y contraseña"""
+    try:
+        data = request.json
+        instagram = normalize_instagram(data.get("instagram", ""))
+        password = data.get("password", "")
+
+        if not instagram or not password:
+            return jsonify({"error": "Instagram y contraseña son requeridos"}), 400
+
+        users = get_supabase().table("users").select("*").eq("instagram", instagram).execute().data
+        if not users:
+            return jsonify({"error": "Usuario o contraseña incorrectos"}), 401
+
+        user = users[0]
+        password_hash = user.get("password_hash")
+        if not password_hash or not check_password_hash(password_hash, password):
+            return jsonify({"error": "Usuario o contraseña incorrectos"}), 401
+
+        return jsonify(sanitize_user(user)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -80,7 +107,7 @@ def get_user(user_id):
         stats = calculate_stats(stamps)
         
         return jsonify({
-            "user": user,
+            "user": sanitize_user(user),
             "total_collected": total_stamps,
             "unique_stamps": total_unique,
             "stats": stats
@@ -320,6 +347,12 @@ def validate_stamp_code(code):
 def normalize_instagram(instagram):
     """Normalizar usuario de Instagram sin @ inicial."""
     return str(instagram).strip().lstrip("@").lower()
+
+def sanitize_user(user):
+    """Remover datos sensibles antes de responder al frontend."""
+    clean_user = dict(user)
+    clean_user.pop("password_hash", None)
+    return clean_user
 
 def generate_all_stamp_codes():
     """Generar lista de todos los códigos de estampas válidos"""
