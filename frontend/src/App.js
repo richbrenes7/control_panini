@@ -5,6 +5,7 @@ import AlbumChecklist from './components/AlbumChecklist';
 import AddStamp from './components/AddStamp';
 import RepeatedStamps from './components/RepeatedStamps';
 import History from './components/History';
+import Dashboard from './components/Dashboard';
 
 const API_URL = process.env.REACT_APP_API_URL || '/api';
 
@@ -22,6 +23,7 @@ function App() {
   const [newPassword, setNewPassword] = useState('');
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [stats, setStats] = useState(null);
   const [showMenu, setShowMenu] = useState({
     dashboard: true,
     album: false,
@@ -61,8 +63,28 @@ function App() {
 
   // Maneja el despliegue de los menús
   const toggleMenu = (tab) => {
-    setShowMenu((prev) => ({ ...prev, [tab]: !prev[tab] }));
+    setShowMenu({
+      dashboard: tab === 'dashboard',
+      album: tab === 'album',
+      add: tab === 'add',
+      repeated: tab === 'repeated',
+      history: tab === 'history'
+    });
     setActiveTab(tab);
+  };
+
+  const loadStats = async (instagram) => {
+    if (!instagram) {
+      setStats(null);
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API_URL}/stats/${instagram}`);
+      setStats(response.data);
+    } catch (error) {
+      setStats(null);
+    }
   };
 
   const clearAuthForm = () => {
@@ -91,6 +113,7 @@ function App() {
       const response = await axios.post(`${API_URL}/auth/login`, payload);
       setToken(response.data.token);
       setCurrentUser(response.data.user);
+      await loadStats(response.data.user.instagram);
       setAuthMode('login');
       clearAuthForm();
     } catch (error) {
@@ -113,6 +136,7 @@ function App() {
       });
       setToken(response.data.token);
       setCurrentUser(response.data.user);
+      await loadStats(response.data.user.instagram);
       clearAuthForm();
     } catch (error) {
       setAuthMessage(error.response?.data?.error || 'No se pudo registrar el usuario');
@@ -147,7 +171,14 @@ function App() {
     setCurrentUser(null);
     localStorage.removeItem('token');
     delete axios.defaults.headers.common.Authorization;
+    setStats(null);
   };
+
+  useEffect(() => {
+    if (currentUser?.instagram) {
+      loadStats(currentUser.instagram);
+    }
+  }, [currentUser]);
 
   if (!currentUser) {
     return (
@@ -341,25 +372,25 @@ function App() {
 
         <div className="tab-content">
           {activeTab === 'dashboard' && showMenu.dashboard && (
-            <div>
-              <h2>Bienvenido a tu álbum Panini</h2>
-              <p>Selecciona una opción del menú para comenzar.</p>
-            </div>
+            <Dashboard stats={stats} />
           )}
           {activeTab === 'album' && showMenu.album && (
             <AlbumChecklist
               instagram={currentUser.instagram}
+              onCollectionChanged={() => loadStats(currentUser.instagram)}
             />
           )}
           {activeTab === 'add' && showMenu.add && (
             <AddStamp
               instagram={currentUser.instagram}
+              onStampAdded={() => loadStats(currentUser.instagram)}
             />
           )}
           {activeTab === 'repeated' && showMenu.repeated && (
             <RepeatedStamps
               instagram={currentUser.instagram}
               usePlanillaFormat={true}
+              onRepeatedChanged={() => loadStats(currentUser.instagram)}
             />
           )}
           {activeTab === 'history' && showMenu.history && (
