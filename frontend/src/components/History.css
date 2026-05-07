@@ -1,0 +1,154 @@
+.history-container {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.history-container h2 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 2px solid #17a2b8;
+  padding-bottom: 10px;
+}
+
+.history-loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+}
+
+.empty-history {
+  text-align: center;
+  padding: 30px;
+  color: #999;
+  font-style: italic;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: 80px 1fr 150px;
+  gap: 15px;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-left: 4px solid #17a2b8;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.history-item:hover {
+  background-color: #e9ecef;
+}
+
+.history-action {
+  text-align: center;
+}
+
+.action-badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+}
+
+.action-badge.add {
+  background-color: #28a745;
+}
+
+.action-badge.remove {
+  background-color: #dc3545;
+}
+
+.action-badge.update {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.history-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.history-details p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.history-code {
+  font-weight: bold;
+  color: #333;
+}
+
+.history-quantity {
+  color: #666;
+  font-size: 13px;
+}
+
+.history-notes {
+  color: #999;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.history-time {
+  text-align: right;
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
+}
+
+.refresh-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.refresh-btn:hover {
+  background-color: #138496;
+}
+
+@media (max-width: 768px) {
+  .history-item {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .history-action {
+    order: 2;
+    text-align: left;
+  }
+
+  .history-details {
+    order: 1;
+  }
+
+  .history-time {
+    order: 3;
+    text-align: left;
+  }
+
+  .history-list {
+    max-height: 100%;
+  }
+}

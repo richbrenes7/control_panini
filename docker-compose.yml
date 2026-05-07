@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: panini-backend
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+      SUPABASE_URL: https://trmulthiyjshlxiqpebu.supabase.co
+      SUPABASE_KEY: sb_publishable_HfCcv97LN_44odIcm6mS1g_2m5_2z3e
+      FLASK_CORS_ORIGINS: "http://localhost:3000"
+    volumes:
+      - ./backend:/app
+    networks:
+      - panini-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: python app.py
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: panini-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - panini-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    command: npm start
+
+networks:
+  panini-network:
+    driver: bridge

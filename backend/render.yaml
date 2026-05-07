@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: control-panini-api
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn --bind 0.0.0.0:5000 app:app --workers 4 --worker-class sync --timeout 60"
+    
+    envVars:
+      - key: SUPABASE_URL
+        value: "https://trmulthiyjshlxiqpebu.supabase.co"
+      - key: SUPABASE_KEY
+        value: ${SUPABASE_KEY}
+      - key: FLASK_ENV
+        value: "production"
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: FLASK_CORS_ORIGINS
+        value: "https://control-panini.netlify.app,http://localhost:3000"
