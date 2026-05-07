@@ -13,5 +13,3 @@ function RepeatedStamps({ instagram, usePlanillaFormat }) {
 }
 
 export default RepeatedStamps;
-
-export default RepeatedStamps;
