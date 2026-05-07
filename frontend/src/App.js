@@ -47,7 +47,7 @@ function App() {
       loadUserStats(user.id);
     } catch (error) {
       console.error('Error iniciando sesión:', error);
-      alert('Usuario o contraseña incorrectos');
+      alert(error.response?.data?.error || 'Usuario o contraseña incorrectos');
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ function App() {
       loadUserStats(newUser.id);
     } catch (error) {
       console.error('Error creando usuario:', error);
-      alert('Error al crear usuario');
+      alert(error.response?.data?.error || 'Error al crear usuario');
     } finally {
       setLoading(false);
     }
