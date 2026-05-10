@@ -457,6 +457,52 @@ def get_missing_stamps(user_id):
         return jsonify({"error": str(e)}), 400
 
 # ======================= ANÁLISIS =======================
+def build_exchange_matches(resolved_user_id):
+    """Construir matches de intercambio para un usuario ya resuelto."""
+    db = get_supabase()
+    users = db.table("users").select("id,name,instagram").neq("id", resolved_user_id).execute().data or []
+    my_collection = db.table("stamps").select("stamp_code").eq("user_id", resolved_user_id).execute().data or []
+    my_repeated = db.table("repeated_stamps").select("stamp_code,quantity").eq("user_id", resolved_user_id).execute().data or []
+    all_repeated = db.table("repeated_stamps").select("user_id,stamp_code,quantity").neq("user_id", resolved_user_id).execute().data or []
+    all_stamps = db.table("stamps").select("user_id,stamp_code").neq("user_id", resolved_user_id).execute().data or []
+
+    my_collection_codes = {stamp["stamp_code"] for stamp in my_collection}
+    users_by_id = {user["id"]: user for user in users}
+    other_collections = {}
+    other_repeated = {}
+
+    for stamp in all_stamps:
+        other_collections.setdefault(stamp["user_id"], set()).add(stamp["stamp_code"])
+
+    for stamp in all_repeated:
+        other_repeated.setdefault(stamp["user_id"], []).append(stamp)
+
+    matches = []
+    for other_user_id, repeated_stamps in other_repeated.items():
+        user = users_by_id.get(other_user_id)
+        if not user:
+            continue
+
+        other_collection_codes = other_collections.get(other_user_id, set())
+        can_receive = [
+            stamp for stamp in repeated_stamps
+            if stamp["stamp_code"] not in my_collection_codes
+        ]
+        can_give = [
+            stamp for stamp in my_repeated
+            if stamp["stamp_code"] not in other_collection_codes
+        ]
+
+        if can_receive and can_give:
+            matches.append({
+                "user": user,
+                "you_can_give": can_give,
+                "you_can_receive": can_receive
+            })
+
+    return matches
+
+
 @app.route('/api/stats/<user_id>', methods=['GET'])
 def get_stats(user_id):
     """Obtener estadísticas completas"""
@@ -465,8 +511,13 @@ def get_stats(user_id):
         if not resolved_user_id:
             return jsonify(calculate_stats([])), 200
 
-        stamps = get_supabase().table("stamps").select("*").eq("user_id", resolved_user_id).execute().data
+        db = get_supabase()
+        stamps = db.table("stamps").select("*").eq("user_id", resolved_user_id).execute().data
+        repeated = db.table("repeated_stamps").select("stamp_code,quantity").eq("user_id", resolved_user_id).execute().data or []
         stats = calculate_stats(stamps)
+        stats["repeated_total"] = sum(int(row.get("quantity") or 0) for row in repeated)
+        stats["repeated_unique"] = len(repeated)
+        stats["exchange_matches"] = len(build_exchange_matches(resolved_user_id))
         return jsonify(stats), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400

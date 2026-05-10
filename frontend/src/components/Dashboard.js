@@ -45,7 +45,22 @@ function Dashboard({ stats }) {
 
         <div className="stat-card">
           <h3>Faltantes</h3>
-          <p className="stat-value">{stats.missing_count || 980}</p>
+          <p className="stat-value">{stats.missing_count || 995}</p>
+        </div>
+
+        <div className="stat-card stat-card-repeated">
+          <h3>Total repetidas</h3>
+          <p className="stat-value">{stats.repeated_total || 0}</p>
+        </div>
+
+        <div className="stat-card stat-card-repeated">
+          <h3>Codigos repetidos</h3>
+          <p className="stat-value">{stats.repeated_unique || 0}</p>
+        </div>
+
+        <div className="stat-card stat-card-matches">
+          <h3>Matches posibles</h3>
+          <p className="stat-value">{stats.exchange_matches || 0}</p>
         </div>
       </div>
 

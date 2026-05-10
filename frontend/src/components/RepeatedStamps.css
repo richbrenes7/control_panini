@@ -1,7 +1,51 @@
 .repeated-container {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
+  gap: 18px;
+}
+
+.repeated-header {
+  align-items: center;
+}
+
+.repeated-counters {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 8px;
+}
+
+.repeated-counters span,
+.step-label {
+  background: #052d30;
+  color: white;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.repeated-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fbff;
+}
+
+.repeated-step h3,
+.repeated-step p {
+  margin: 0;
+}
+
+.repeated-step p {
+  color: #666;
+  margin-top: 4px;
+}
+
+.exchange-step {
+  margin-top: 8px;
 }
 
 .repeated-form {
@@ -13,10 +57,10 @@
 .repeated-form input {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid #2f3b52;
+  border: 1px solid #b8c6d9;
   border-radius: 8px;
-  background: #111827;
-  color: #e5e7eb;
+  background: white;
+  color: #333;
   font-size: 1em;
 }
 
@@ -37,9 +81,74 @@
   cursor: not-allowed;
 }
 
+.repeated-group-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.repeated-group-title h4 {
+  margin: 0;
+  color: #333;
+}
+
+.repeated-group-title strong {
+  color: #0f766e;
+}
+
+.repeated-cell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+}
+
+.repeated-cell span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repeated-owned {
+  background: #0f766e;
+  border-color: #0f766e;
+}
+
+.stamp-qty-badge {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 1px 5px;
+  font-size: 0.72rem;
+}
+
+.repeated-country-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.repeated-country-toggle span:last-child {
+  color: #64748b;
+}
+
+.quick-adjust,
+.matches-panel {
+  border-top: 1px solid #dbeafe;
+  padding-top: 18px;
+}
+
+.quick-adjust h3 {
+  color: #333;
+  margin: 0 0 12px;
+}
+
 .message {
   padding: 12px;
-  margin-bottom: 16px;
   border-radius: 8px;
   background: #1f2937;
   color: #fbbf24;
@@ -51,25 +160,25 @@
 }
 
 .repeated-item {
-  border: 1px solid #2f3b52;
+  border: 1px solid #dbeafe;
   border-radius: 8px;
   padding: 12px;
   display: flex;
   justify-content: space-between;
   gap: 12px;
   align-items: center;
-  background: #0f172a;
+  background: #f8fbff;
 }
 
 .repeated-code {
-  color: #e5e7eb;
-  font-weight: 700;
+  color: #111827;
+  font-weight: 800;
   min-width: 80px;
 }
 
 .repeated-qty {
-  color: #38bdf8;
-  font-weight: 700;
+  color: #0f766e;
+  font-weight: 800;
   min-width: 45px;
 }
 
@@ -80,22 +189,106 @@
 }
 
 .empty-state {
-  color: #9ca3af;
+  color: #64748b;
+  margin: 0;
+}
+
+.matches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.match-card {
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fbff;
+}
+
+.match-user {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.match-user h4 {
+  color: #111827;
+  margin: 0;
+}
+
+.match-user span {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.match-user a {
+  background: #0f766e;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-weight: 800;
+}
+
+.match-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.match-columns h5 {
+  color: #333;
+  margin: 0 0 8px;
+}
+
+.match-code-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.match-code,
+.match-empty {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.match-code {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.match-empty {
+  background: #e5e7eb;
+  color: #64748b;
 }
 
 @media (max-width: 768px) {
-  .repeated-form {
-    flex-direction: column;
+  .repeated-header,
+  .repeated-step,
+  .repeated-form,
+  .repeated-item,
+  .match-user {
     align-items: stretch;
+    flex-direction: column;
   }
 
-  .repeated-item {
-    align-items: stretch;
-    flex-direction: column;
+  .repeated-counters {
+    grid-template-columns: 1fr;
+    width: 100%;
   }
 
   .repeated-actions {
     margin-left: 0;
     justify-content: stretch;
+  }
+
+  .match-columns {
+    grid-template-columns: 1fr;
   }
 }

@@ -35,6 +35,14 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.stat-card-repeated {
+  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+}
+
+.stat-card-matches {
+  background: linear-gradient(135deg, #1f2937 0%, #0284c7 100%);
+}
+
 .stat-card h3 {
   margin: 0 0 10px 0;
   font-size: 14px;
