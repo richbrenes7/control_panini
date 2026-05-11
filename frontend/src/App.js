@@ -6,6 +6,7 @@ import AddStamp from './components/AddStamp';
 import RepeatedStamps from './components/RepeatedStamps';
 import History from './components/History';
 import Dashboard from './components/Dashboard';
+import ExportList from './components/ExportList';
 
 const API_URL = process.env.REACT_APP_API_URL || '/api';
 
@@ -29,6 +30,7 @@ function App() {
     album: false,
     add: false,
     repeated: false,
+    export: false,
     history: false
   });
 
@@ -68,6 +70,7 @@ function App() {
       album: tab === 'album',
       add: tab === 'add',
       repeated: tab === 'repeated',
+      export: tab === 'export',
       history: tab === 'history'
     });
     setActiveTab(tab);
@@ -363,6 +366,12 @@ function App() {
             Repetidas
           </button>
           <button
+            className={`tab ${activeTab === 'export' ? 'active' : ''}`}
+            onClick={() => toggleMenu('export')}
+          >
+            Exportar
+          </button>
+          <button
             className={`tab ${activeTab === 'history' ? 'active' : ''}`}
             onClick={() => toggleMenu('history')}
           >
@@ -392,6 +401,9 @@ function App() {
               usePlanillaFormat={true}
               onRepeatedChanged={() => loadStats(currentUser.instagram)}
             />
+          )}
+          {activeTab === 'export' && showMenu.export && (
+            <ExportList instagram={currentUser.instagram} />
           )}
           {activeTab === 'history' && showMenu.history && (
             <History userId={currentUser.instagram} />

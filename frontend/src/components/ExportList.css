@@ -1,0 +1,123 @@
+.export-container {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: grid;
+  gap: 18px;
+}
+
+.export-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  border-bottom: 2px solid #28a745;
+  padding-bottom: 16px;
+}
+
+.export-header h2 {
+  color: #333;
+  margin: 0;
+}
+
+.export-header p {
+  color: #666;
+  margin-top: 6px;
+}
+
+.export-header button,
+.export-actions button {
+  background: #0f766e;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 11px 14px;
+  white-space: nowrap;
+}
+
+.export-header button:disabled,
+.export-actions button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.export-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.export-summary div {
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.export-summary strong {
+  color: #0f766e;
+  font-size: 1.8rem;
+}
+
+.export-summary span {
+  color: #475569;
+  font-weight: 700;
+}
+
+.export-message {
+  border-radius: 8px;
+  background: #1f2937;
+  color: #fbbf24;
+  padding: 12px;
+}
+
+.export-message.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.export-preview {
+  width: 100%;
+  min-height: 320px;
+  resize: vertical;
+  border: 1px solid #b8c6d9;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #111827;
+  padding: 14px;
+  font-family: inherit;
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+
+.export-preview:focus {
+  outline: 2px solid rgba(15, 118, 110, 0.24);
+  border-color: #0f766e;
+}
+
+.export-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .export-container {
+    padding: 16px;
+  }
+
+  .export-header,
+  .export-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .export-header button,
+  .export-actions button {
+    width: 100%;
+  }
+}
