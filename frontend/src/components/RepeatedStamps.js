@@ -22,6 +22,7 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [openCountries, setOpenCountries] = useState({});
+  const [selectedCode, setSelectedCode] = useState('');
 
   const repeatedByCode = useMemo(() => {
     return repeated.reduce((acc, row) => {
@@ -103,18 +104,21 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
     const currentQty = repeatedByCode[normalizedCode]?.quantity || 0;
     await saveQuantity(normalizedCode, currentQty + 1);
     setCodeInput('');
+    setSelectedCode(normalizedCode);
   };
 
   const renderRepeatedCell = (code) => {
     const quantity = Number(repeatedByCode[code]?.quantity || 0);
+    const isSelected = selectedCode === code;
     return (
       <button
         type="button"
         key={code}
-        className={`stamp-cell repeated-cell ${quantity > 0 ? 'owned repeated-owned' : ''}`}
-        onClick={() => saveQuantity(code, quantity + 1)}
+        className={`stamp-cell repeated-cell ${quantity > 0 ? 'owned repeated-owned' : ''} ${isSelected ? 'selected' : ''}`}
+        onClick={() => setSelectedCode(code)}
         disabled={loading}
-        aria-label={`Agregar repetida ${code}`}
+        aria-pressed={isSelected}
+        aria-label={`Seleccionar repetida ${code}`}
       >
         <span>{code}</span>
         {quantity > 0 && <span className="stamp-qty-badge">x{quantity}</span>}
@@ -135,6 +139,7 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
   };
 
   const sortedRepeated = [...repeated].sort((a, b) => a.stamp_code.localeCompare(b.stamp_code));
+  const selectedQuantity = Number(repeatedByCode[selectedCode]?.quantity || 0);
 
   return (
     <div className="repeated-container album-checklist">
@@ -154,7 +159,7 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
         <div className="step-label">Paso 1</div>
         <div>
           <h3>Control de repetidas</h3>
-          <p>Haz clic en una casilla para sumar una repetida. Usa el resumen para restar o quitar.</p>
+          <p>Pulsa una casilla para ver su conteo y ajustar cuantas repetidas tienes.</p>
         </div>
       </section>
 
@@ -170,6 +175,40 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
       </form>
 
       {message && <div className="message">{message}</div>}
+
+      {selectedCode && (
+        <section className="selected-repeated-panel">
+          <div>
+            <span className="selected-label">Seleccionada</span>
+            <h3>{selectedCode}</h3>
+            <p>Tienes {selectedQuantity} repetida{selectedQuantity === 1 ? '' : 's'} de esta estampa.</p>
+          </div>
+          <div className="selected-actions">
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => saveQuantity(selectedCode, selectedQuantity + 1)}
+            >
+              Agregar +1
+            </button>
+            <button
+              type="button"
+              disabled={loading || selectedQuantity <= 0}
+              onClick={() => saveQuantity(selectedCode, selectedQuantity - 1)}
+            >
+              Eliminar -1
+            </button>
+            <button
+              type="button"
+              className="danger"
+              disabled={loading || selectedQuantity <= 0}
+              onClick={() => saveQuantity(selectedCode, 0)}
+            >
+              Quitar todas
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className="album-section">
         <h3>Especiales</h3>

@@ -71,8 +71,27 @@ export const getCountryCodes = (prefix) =>
   Array.from({ length: 20 }, (_, index) => `${prefix}${index + 1}`);
 
 export const getStampType = (code) => {
-  if (code === 'FWC' || code === '00' || code.startsWith('FWC') || code.startsWith('CC')) {
+  const normalizedCode = String(code || '').toUpperCase().trim();
+
+  if (
+    normalizedCode === 'FWC' ||
+    normalizedCode === '00' ||
+    normalizedCode.startsWith('FWC') ||
+    normalizedCode.startsWith('CC')
+  ) {
     return 'special';
   }
+
+  const country = COUNTRY_GROUPS.find((group) => normalizedCode.startsWith(group.prefix));
+  if (country) {
+    const number = Number(normalizedCode.replace(country.prefix, ''));
+    if (number === 1) {
+      return 'shield';
+    }
+    if (number === 13) {
+      return 'group';
+    }
+  }
+
   return 'player';
 };

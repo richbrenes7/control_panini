@@ -643,7 +643,7 @@ def calculate_stats(stamps):
     
     for stamp in stamps:
         code = stamp['stamp_code']
-        stamp_type = stamp.get('type', 'unknown')
+        stamp_type = get_stamp_type_from_code(code, stamp.get('type', 'unknown'))
         
         # Categorizar
         if is_special(code):
@@ -673,6 +673,27 @@ def is_special(code):
         return num <= 19
     except:
         return False
+
+def get_stamp_type_from_code(code, fallback="player"):
+    """Clasificar estampas de equipo: 1 escudo, 13 foto grupal."""
+    normalized_code = str(code or "").upper().strip()
+
+    if is_special(normalized_code):
+        return "special"
+
+    for prefix in COUNTRY_PREFIXES:
+        if normalized_code.startswith(prefix):
+            try:
+                stamp_number = int(normalized_code[len(prefix):])
+                if stamp_number == 1:
+                    return "shield"
+                if stamp_number == 13:
+                    return "group"
+                return "player"
+            except Exception:
+                break
+
+    return fallback or "player"
 
 def log_action(user_id, action, stamp_code, quantity):
     """Registrar acción en historial"""

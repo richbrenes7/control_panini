@@ -65,7 +65,8 @@
 }
 
 .repeated-form button,
-.repeated-item button {
+.repeated-item button,
+.selected-actions button {
   background: #22c55e;
   color: #0b1220;
   border: none;
@@ -76,7 +77,8 @@
 }
 
 .repeated-form button:disabled,
-.repeated-item button:disabled {
+.repeated-item button:disabled,
+.selected-actions button:disabled {
   background: #94a3b8;
   cursor: not-allowed;
 }
@@ -116,6 +118,11 @@
   border-color: #0f766e;
 }
 
+.repeated-cell.selected {
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.28);
+  border-color: #0f766e;
+}
+
 .stamp-qty-badge {
   background: rgba(255, 255, 255, 0.22);
   border-radius: 999px;
@@ -152,6 +159,54 @@
   border-radius: 8px;
   background: #1f2937;
   color: #fbbf24;
+}
+
+.selected-repeated-panel {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid #99f6e4;
+  border-radius: 8px;
+  padding: 14px;
+  background: #ecfeff;
+}
+
+.selected-repeated-panel h3,
+.selected-repeated-panel p {
+  margin: 0;
+}
+
+.selected-repeated-panel h3 {
+  color: #0f766e;
+  font-size: 1.35rem;
+}
+
+.selected-repeated-panel p {
+  color: #475569;
+  margin-top: 4px;
+}
+
+.selected-label {
+  display: inline-block;
+  color: #0f766e;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.selected-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.selected-actions .danger {
+  background: #ef4444;
+  color: white;
 }
 
 .repeated-list {
@@ -273,6 +328,7 @@
   .repeated-step,
   .repeated-form,
   .repeated-item,
+  .selected-repeated-panel,
   .match-user {
     align-items: stretch;
     flex-direction: column;
