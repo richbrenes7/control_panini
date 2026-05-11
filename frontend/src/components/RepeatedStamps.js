@@ -21,6 +21,10 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
   const [codeInput, setCodeInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [openSteps, setOpenSteps] = useState({
+    control: true,
+    matches: false
+  });
   const [openSpecialGroups, setOpenSpecialGroups] = useState({});
   const [openCountries, setOpenCountries] = useState({});
   const [selectedCode, setSelectedCode] = useState('');
@@ -59,6 +63,12 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
       refreshData();
     }
   }, [instagram, refreshData]);
+
+  useEffect(() => {
+    if (matches.length > 0) {
+      setOpenSteps((prev) => ({ ...prev, matches: true }));
+    }
+  }, [matches.length]);
 
   const saveQuantity = async (code, quantity) => {
     const normalizedCode = normalizeCode(code);
@@ -194,104 +204,116 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
         </div>
       </div>
 
-      <section className="repeated-step">
-        <div className="step-label">Paso 1</div>
-        <div>
-          <h3>Control de repetidas</h3>
-          <p>Pulsa una casilla para ver su conteo y ajustar cuantas repetidas tienes.</p>
-        </div>
+      <section className="repeated-step-panel">
+        <button
+          type="button"
+          className="repeated-step repeated-step-toggle"
+          onClick={() => setOpenSteps((prev) => ({ ...prev, control: !prev.control }))}
+          aria-expanded={openSteps.control}
+        >
+          <div className="step-label">Paso 1</div>
+          <div>
+            <h3>Control de repetidas</h3>
+            <p>Pulsa una casilla para ver su conteo y ajustar cuantas repetidas tienes.</p>
+          </div>
+          <span>{openSteps.control ? '-' : '+'}</span>
+        </button>
       </section>
 
-      <form className="repeated-form" onSubmit={addFromInput}>
-        <input
-          type="text"
-          placeholder="Codigo estampa, ej: MEX1, FWC3, CC2"
-          value={codeInput}
-          onChange={(event) => setCodeInput(normalizeCode(event.target.value))}
-          disabled={loading}
-        />
-        <button type="submit" disabled={loading || !codeInput.trim()}>Agregar +1</button>
-      </form>
+      {openSteps.control && (
+        <>
+          <form className="repeated-form" onSubmit={addFromInput}>
+            <input
+              type="text"
+              placeholder="Codigo estampa, ej: MEX1, FWC3, CC2"
+              value={codeInput}
+              onChange={(event) => setCodeInput(normalizeCode(event.target.value))}
+              disabled={loading}
+            />
+            <button type="submit" disabled={loading || !codeInput.trim()}>Agregar +1</button>
+          </form>
 
-      {message && <div className="message">{message}</div>}
+          {message && <div className="message">{message}</div>}
 
-      <section className="album-section">
-        <h3>Especiales</h3>
-        <div className="special-grid">
-          {SPECIAL_GROUPS.map((group) => {
-            const groupTotal = group.codes.reduce(
-              (total, code) => total + Number(repeatedByCode[code]?.quantity || 0),
-              0
-            );
-            const groupUnique = group.codes.filter((code) => repeatedByCode[code]).length;
-            const isOpen = openSpecialGroups[group.id] ?? groupTotal > 0;
-            return (
-              <article key={group.id} className="special-group repeated-group">
-                <button
-                  type="button"
-                  className="country-card-header repeated-country-toggle"
-                  onClick={() => setOpenSpecialGroups((prev) => ({ ...prev, [group.id]: !isOpen }))}
-                >
-                  <div>
-                    <h4>{group.name}</h4>
-                    <span>{group.id === 'collectors' ? 'CC' : 'FWC'}</span>
-                  </div>
-                  <strong>{groupUnique}/{group.codes.length} | x{groupTotal}</strong>
-                  <span>{isOpen ? '-' : '+'}</span>
-                </button>
-                {isOpen && (
-                  <>
-                    <div className="stamp-grid special-codes">
-                      {group.codes.map(renderRepeatedCell)}
-                    </div>
-                    {group.codes.includes(selectedCode) && renderSelectedControls()}
-                  </>
-                )}
-              </article>
-            );
-          })}
-        </div>
-      </section>
+          <section className="album-section">
+            <h3>Especiales</h3>
+            <div className="special-grid">
+              {SPECIAL_GROUPS.map((group) => {
+                const groupTotal = group.codes.reduce(
+                  (total, code) => total + Number(repeatedByCode[code]?.quantity || 0),
+                  0
+                );
+                const groupUnique = group.codes.filter((code) => repeatedByCode[code]).length;
+                const isOpen = openSpecialGroups[group.id] ?? groupTotal > 0;
+                return (
+                  <article key={group.id} className="special-group repeated-group">
+                    <button
+                      type="button"
+                      className="country-card-header repeated-country-toggle"
+                      onClick={() => setOpenSpecialGroups((prev) => ({ ...prev, [group.id]: !isOpen }))}
+                    >
+                      <div>
+                        <h4>{group.name}</h4>
+                        <span>{group.id === 'collectors' ? 'CC' : 'FWC'}</span>
+                      </div>
+                      <strong>{groupUnique}/{group.codes.length} | x{groupTotal}</strong>
+                      <span>{isOpen ? '-' : '+'}</span>
+                    </button>
+                    {isOpen && (
+                      <>
+                        <div className="stamp-grid special-codes">
+                          {group.codes.map(renderRepeatedCell)}
+                        </div>
+                        {group.codes.includes(selectedCode) && renderSelectedControls()}
+                      </>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
 
-      <section className="album-section">
-        <h3>Paises</h3>
-        <div className="country-grid">
-          {COUNTRY_GROUPS.map((country) => {
-            const countryCodes = getCountryCodes(country.prefix);
-            const repeatedCount = countryCodes.reduce(
-              (total, code) => total + Number(repeatedByCode[code]?.quantity || 0),
-              0
-            );
-            const repeatedUnique = countryCodes.filter((code) => repeatedByCode[code]).length;
-            const isOpen = openCountries[country.prefix] ?? repeatedCount > 0;
+          <section className="album-section">
+            <h3>Paises</h3>
+            <div className="country-grid">
+              {COUNTRY_GROUPS.map((country) => {
+                const countryCodes = getCountryCodes(country.prefix);
+                const repeatedCount = countryCodes.reduce(
+                  (total, code) => total + Number(repeatedByCode[code]?.quantity || 0),
+                  0
+                );
+                const repeatedUnique = countryCodes.filter((code) => repeatedByCode[code]).length;
+                const isOpen = openCountries[country.prefix] ?? repeatedCount > 0;
 
-            return (
-              <article key={country.prefix} className="country-card">
-                <button
-                  type="button"
-                  className="country-card-header repeated-country-toggle"
-                  onClick={() => setOpenCountries((prev) => ({ ...prev, [country.prefix]: !isOpen }))}
-                >
-                  <div>
-                    <h4>{country.name}</h4>
-                    <span>{country.prefix}</span>
-                  </div>
-                  <strong>{repeatedUnique}/20 | x{repeatedCount}</strong>
-                  <span>{isOpen ? '-' : '+'}</span>
-                </button>
-                {isOpen && (
-                  <>
-                    <div className="stamp-grid">
-                      {countryCodes.map(renderRepeatedCell)}
-                    </div>
-                    {countryCodes.includes(selectedCode) && renderSelectedControls()}
-                  </>
-                )}
-              </article>
-            );
-          })}
-        </div>
-      </section>
+                return (
+                  <article key={country.prefix} className="country-card">
+                    <button
+                      type="button"
+                      className="country-card-header repeated-country-toggle"
+                      onClick={() => setOpenCountries((prev) => ({ ...prev, [country.prefix]: !isOpen }))}
+                    >
+                      <div>
+                        <h4>{country.name}</h4>
+                        <span>{country.prefix}</span>
+                      </div>
+                      <strong>{repeatedUnique}/20 | x{repeatedCount}</strong>
+                      <span>{isOpen ? '-' : '+'}</span>
+                    </button>
+                    {isOpen && (
+                      <>
+                        <div className="stamp-grid">
+                          {countryCodes.map(renderRepeatedCell)}
+                        </div>
+                        {countryCodes.includes(selectedCode) && renderSelectedControls()}
+                      </>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
 
       <section className="quick-adjust">
         <h3>Resumen de repetidas</h3>
@@ -332,52 +354,62 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
         )}
       </section>
 
-      <section className="repeated-step exchange-step">
-        <div className="step-label">Paso 2</div>
-        <div>
-          <h3>Recuento y matcheo</h3>
-          <p>Estos usuarios tienen repetidas que te faltan y tambien necesitan repetidas tuyas.</p>
-        </div>
+      <section className="repeated-step-panel exchange-step">
+        <button
+          type="button"
+          className="repeated-step repeated-step-toggle"
+          onClick={() => setOpenSteps((prev) => ({ ...prev, matches: !prev.matches }))}
+          aria-expanded={openSteps.matches}
+        >
+          <div className="step-label">Paso 2</div>
+          <div>
+            <h3>Recuento y matcheo</h3>
+            <p>Estos usuarios tienen repetidas que te faltan y tambien necesitan repetidas tuyas.</p>
+          </div>
+          <span>{openSteps.matches ? '-' : '+'}</span>
+        </button>
       </section>
 
-      <section className="matches-panel">
-        {matches.length === 0 ? (
-          <p className="empty-state">Aun no hay matches de intercambio. Agrega repetidas y marca tu planilla para cruzar datos.</p>
-        ) : (
-          <div className="matches-grid">
-            {matches.map((match) => {
-              const instagramUser = match.user?.instagram || match.user?.name || 'usuario';
-              return (
-                <article key={match.user?.id || instagramUser} className="match-card">
-                  <div className="match-user">
-                    <div>
-                      <h4>@{instagramUser}</h4>
-                      <span>{match.user?.name || instagramUser}</span>
+      {openSteps.matches && (
+        <section className="matches-panel">
+          {matches.length === 0 ? (
+            <p className="empty-state">Aun no hay matches de intercambio. Agrega repetidas y marca tu planilla para cruzar datos.</p>
+          ) : (
+            <div className="matches-grid">
+              {matches.map((match) => {
+                const instagramUser = match.user?.instagram || match.user?.name || 'usuario';
+                return (
+                  <article key={match.user?.id || instagramUser} className="match-card">
+                    <div className="match-user">
+                      <div>
+                        <h4>@{instagramUser}</h4>
+                        <span>{match.user?.name || instagramUser}</span>
+                      </div>
+                      <a
+                        href={`https://instagram.com/${instagramUser.replace('@', '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Instagram
+                      </a>
                     </div>
-                    <a
-                      href={`https://instagram.com/${instagramUser.replace('@', '')}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Instagram
-                    </a>
-                  </div>
-                  <div className="match-columns">
-                    <div>
-                      <h5>Te puede dar</h5>
-                      <div className="match-code-list">{renderMatchCodes(match.you_can_receive)}</div>
+                    <div className="match-columns">
+                      <div>
+                        <h5>Te puede dar</h5>
+                        <div className="match-code-list">{renderMatchCodes(match.you_can_receive)}</div>
+                      </div>
+                      <div>
+                        <h5>Le sirven tuyas</h5>
+                        <div className="match-code-list">{renderMatchCodes(match.you_can_give)}</div>
+                      </div>
                     </div>
-                    <div>
-                      <h5>Le sirven tuyas</h5>
-                      <div className="match-code-list">{renderMatchCodes(match.you_can_give)}</div>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

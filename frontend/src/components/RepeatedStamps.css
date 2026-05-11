@@ -34,6 +34,23 @@
   background: #f8fbff;
 }
 
+.repeated-step-toggle {
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
+.repeated-step-toggle > span:last-child {
+  color: #0f766e;
+  font-size: 1.4rem;
+  font-weight: 900;
+  margin-left: auto;
+}
+
+.repeated-step-toggle:hover {
+  border-color: #99f6e4;
+}
+
 .repeated-step h3,
 .repeated-step p {
   margin: 0;
