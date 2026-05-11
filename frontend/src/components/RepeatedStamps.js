@@ -138,6 +138,44 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
     ));
   };
 
+  const renderSelectedControls = () => {
+    if (!selectedCode) return null;
+
+    return (
+      <section className="selected-repeated-panel">
+        <div>
+          <span className="selected-label">Seleccionada</span>
+          <h3>{selectedCode}</h3>
+          <p>Tienes {selectedQuantity} repetida{selectedQuantity === 1 ? '' : 's'} de esta estampa.</p>
+        </div>
+        <div className="selected-actions">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => saveQuantity(selectedCode, selectedQuantity + 1)}
+          >
+            Agregar +1
+          </button>
+          <button
+            type="button"
+            disabled={loading || selectedQuantity <= 0}
+            onClick={() => saveQuantity(selectedCode, selectedQuantity - 1)}
+          >
+            Eliminar -1
+          </button>
+          <button
+            type="button"
+            className="danger"
+            disabled={loading || selectedQuantity <= 0}
+            onClick={() => saveQuantity(selectedCode, 0)}
+          >
+            Quitar todas
+          </button>
+        </div>
+      </section>
+    );
+  };
+
   const sortedRepeated = [...repeated].sort((a, b) => a.stamp_code.localeCompare(b.stamp_code));
   const selectedQuantity = Number(repeatedByCode[selectedCode]?.quantity || 0);
 
@@ -176,40 +214,6 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
 
       {message && <div className="message">{message}</div>}
 
-      {selectedCode && (
-        <section className="selected-repeated-panel">
-          <div>
-            <span className="selected-label">Seleccionada</span>
-            <h3>{selectedCode}</h3>
-            <p>Tienes {selectedQuantity} repetida{selectedQuantity === 1 ? '' : 's'} de esta estampa.</p>
-          </div>
-          <div className="selected-actions">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => saveQuantity(selectedCode, selectedQuantity + 1)}
-            >
-              Agregar +1
-            </button>
-            <button
-              type="button"
-              disabled={loading || selectedQuantity <= 0}
-              onClick={() => saveQuantity(selectedCode, selectedQuantity - 1)}
-            >
-              Eliminar -1
-            </button>
-            <button
-              type="button"
-              className="danger"
-              disabled={loading || selectedQuantity <= 0}
-              onClick={() => saveQuantity(selectedCode, 0)}
-            >
-              Quitar todas
-            </button>
-          </div>
-        </section>
-      )}
-
       <section className="album-section">
         <h3>Especiales</h3>
         <div className="special-grid">
@@ -227,6 +231,7 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
                 <div className="stamp-grid special-codes">
                   {group.codes.map(renderRepeatedCell)}
                 </div>
+                {group.codes.includes(selectedCode) && renderSelectedControls()}
               </div>
             );
           })}
@@ -260,9 +265,12 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
                   <span>{isOpen ? '-' : '+'}</span>
                 </button>
                 {isOpen && (
-                  <div className="stamp-grid">
-                    {countryCodes.map(renderRepeatedCell)}
-                  </div>
+                  <>
+                    <div className="stamp-grid">
+                      {countryCodes.map(renderRepeatedCell)}
+                    </div>
+                    {countryCodes.includes(selectedCode) && renderSelectedControls()}
+                  </>
                 )}
               </article>
             );
