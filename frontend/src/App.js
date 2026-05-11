@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './App.css';
 import AlbumChecklist from './components/AlbumChecklist';
-import AddStamp from './components/AddStamp';
 import RepeatedStamps from './components/RepeatedStamps';
 import History from './components/History';
 import Dashboard from './components/Dashboard';
@@ -28,7 +27,6 @@ function App() {
   const [showMenu, setShowMenu] = useState({
     dashboard: true,
     album: false,
-    add: false,
     repeated: false,
     export: false,
     history: false
@@ -68,7 +66,6 @@ function App() {
     setShowMenu({
       dashboard: tab === 'dashboard',
       album: tab === 'album',
-      add: tab === 'add',
       repeated: tab === 'repeated',
       export: tab === 'export',
       history: tab === 'history'
@@ -354,12 +351,6 @@ function App() {
             Planilla
           </button>
           <button
-            className={`tab ${activeTab === 'add' ? 'active' : ''}`}
-            onClick={() => toggleMenu('add')}
-          >
-            Agregar Estampa
-          </button>
-          <button
             className={`tab ${activeTab === 'repeated' ? 'active' : ''}`}
             onClick={() => toggleMenu('repeated')}
           >
@@ -387,12 +378,6 @@ function App() {
             <AlbumChecklist
               instagram={currentUser.instagram}
               onCollectionChanged={() => loadStats(currentUser.instagram)}
-            />
-          )}
-          {activeTab === 'add' && showMenu.add && (
-            <AddStamp
-              instagram={currentUser.instagram}
-              onStampAdded={() => loadStats(currentUser.instagram)}
             />
           )}
           {activeTab === 'repeated' && showMenu.repeated && (
