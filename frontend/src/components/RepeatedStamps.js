@@ -187,7 +187,6 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
     );
   };
 
-  const sortedRepeated = [...repeated].sort((a, b) => a.stamp_code.localeCompare(b.stamp_code));
   const selectedQuantity = Number(repeatedByCode[selectedCode]?.quantity || 0);
 
   return (
@@ -314,45 +313,6 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
           </section>
         </>
       )}
-
-      <section className="quick-adjust">
-        <h3>Resumen de repetidas</h3>
-        {sortedRepeated.length === 0 ? (
-          <p className="empty-state">No tienes repetidas registradas.</p>
-        ) : (
-          <div className="repeated-list">
-            {sortedRepeated.map((row) => (
-              <div key={row.id} className="repeated-item">
-                <div className="repeated-code">{row.stamp_code}</div>
-                <div className="repeated-qty">x{row.quantity}</div>
-                <div className="repeated-actions">
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={() => saveQuantity(row.stamp_code, (row.quantity || 0) + 1)}
-                  >
-                    +1
-                  </button>
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={() => saveQuantity(row.stamp_code, (row.quantity || 0) - 1)}
-                  >
-                    -1
-                  </button>
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={() => saveQuantity(row.stamp_code, 0)}
-                  >
-                    Quitar
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
 
       <section className="repeated-step-panel exchange-step">
         <button
