@@ -1,17 +1,57 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { COUNTRY_GROUPS, SPECIAL_GROUPS } from '../albumData';
 import './ExportList.css';
 
 const API_URL = process.env.REACT_APP_API_URL || '/api';
 
-function formatRepeated(rows) {
-  return rows
-    .map((row) => `${row.stamp_code} x${row.quantity || 1}`)
-    .join(', ');
+function compareCodes(a, b) {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 }
 
-function formatCodes(codes) {
-  return codes.join(', ');
+function groupCodesByAlbum(codes) {
+  const normalizedCodes = [...codes].sort(compareCodes);
+  const specialCodes = new Set(SPECIAL_GROUPS.flatMap((group) => group.codes));
+  const lines = [];
+
+  const specialItems = normalizedCodes.filter((code) => specialCodes.has(code));
+  if (specialItems.length > 0) {
+    lines.push(`Especiales: ${specialItems.join(', ')}`);
+  }
+
+  COUNTRY_GROUPS.forEach((country) => {
+    const countryItems = normalizedCodes.filter((code) => code.startsWith(country.prefix));
+    if (countryItems.length > 0) {
+      lines.push(`${country.name} (${country.prefix}): ${countryItems.join(', ')}`);
+    }
+  });
+
+  const knownCodes = new Set([
+    ...specialItems,
+    ...COUNTRY_GROUPS.flatMap((country) => normalizedCodes.filter((code) => code.startsWith(country.prefix)))
+  ]);
+  const otherItems = normalizedCodes.filter((code) => !knownCodes.has(code));
+  if (otherItems.length > 0) {
+    lines.push(`Otros: ${otherItems.join(', ')}`);
+  }
+
+  return lines;
+}
+
+function groupRepeatedByAlbum(rows) {
+  const quantityByCode = rows.reduce((acc, row) => {
+    acc[row.stamp_code] = Number(row.quantity || 1);
+    return acc;
+  }, {});
+
+  return groupCodesByAlbum(Object.keys(quantityByCode)).map((line) => {
+    const [label, values] = line.split(': ');
+    const formattedValues = values
+      .split(', ')
+      .map((code) => `${code} x${quantityByCode[code] || 1}`)
+      .join(', ');
+    return `${label}: ${formattedValues}`;
+  });
 }
 
 async function copyText(text) {
@@ -67,17 +107,17 @@ function ExportList({ instagram }) {
   }, [repeated]);
 
   const exportText = useMemo(() => {
-    const missingText = missing.length > 0 ? formatCodes(missing) : 'No tengo faltantes registradas.';
-    const repeatedText = sortedRepeated.length > 0 ? formatRepeated(sortedRepeated) : 'No tengo repetidas registradas.';
+    const missingLines = missing.length > 0 ? groupCodesByAlbum(missing) : ['No tengo faltantes registradas.'];
+    const repeatedLines = sortedRepeated.length > 0 ? groupRepeatedByAlbum(sortedRepeated) : ['No tengo repetidas registradas.'];
 
     return [
       `Hola, soy @${instagram}. Estoy intercambiando estampas del Mundial 2026.`,
       '',
       `Las que me faltan (${missing.length}):`,
-      missingText,
+      ...missingLines,
       '',
       `Las que tengo repetidas (${sortedRepeated.length} codigos):`,
-      repeatedText,
+      ...repeatedLines,
       '',
       'Si tienes alguna que me falte y te sirve alguna repetida mia, escribeme para intercambiar.'
     ].join('\n');
