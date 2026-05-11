@@ -251,7 +251,7 @@ def add_stamp():
         stamp_code = str(data.get("stamp_code", "")).upper().strip()
         stamp_data = {
             "user_id": resolved_user_id,
-            "stamp_code": stamp_code,  # ej: "FWC", "MEX1", "CC1"
+            "stamp_code": stamp_code,  # ej: "FWC1", "MEX1", "CC1"
             "team_id": data.get("team_id"),  # ej: 1-48 (países)
             "type": data.get("type"),  # "shield", "group", "player"
             "quantity": data.get("quantity", 1),
@@ -714,7 +714,7 @@ def validate_stamp_code(code):
     try:
         normalized_code = str(code).upper().strip()
 
-        if normalized_code in ["FWC", "00"]:
+        if normalized_code == "00":
             return True
 
         if normalized_code.startswith("FWC"):
@@ -737,7 +737,7 @@ def validate_stamp_code(code):
 
 def generate_all_stamp_codes():
     """Generar codigos de la planilla usada por la app."""
-    codes = ["FWC", "00"]
+    codes = ["00"]
     codes.extend([f"FWC{i}" for i in range(1, 20)])
     for prefix in COUNTRY_PREFIXES:
         codes.extend([f"{prefix}{i}" for i in range(1, 21)])
@@ -749,7 +749,7 @@ def is_special(code):
     try:
         normalized_code = str(code).upper().strip()
         return (
-            normalized_code in ["FWC", "00"] or
+            normalized_code == "00" or
             normalized_code.startswith("FWC") or
             normalized_code.startswith("CC")
         )

@@ -74,6 +74,15 @@
   margin-bottom: 12px;
 }
 
+.repeated-country-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
 .country-card-header h4 {
   margin: 0;
   color: #333;

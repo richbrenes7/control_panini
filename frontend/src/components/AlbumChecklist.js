@@ -9,6 +9,7 @@ function AlbumChecklist({ instagram, onCollectionChanged }) {
   const [stamps, setStamps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [openSpecialGroups, setOpenSpecialGroups] = useState({});
   const [openCountries, setOpenCountries] = useState({});
 
   const stampsByCode = useMemo(() => {
@@ -85,7 +86,7 @@ function AlbumChecklist({ instagram, onCollectionChanged }) {
           <p>Marca cada casilla para registrar las estampas que ya tienes.</p>
         </div>
         <div className="album-counter">
-          {stamps.length} / 995
+          {stamps.length} / 994
         </div>
       </div>
 
@@ -94,14 +95,31 @@ function AlbumChecklist({ instagram, onCollectionChanged }) {
       <section className="album-section">
         <h3>Especiales</h3>
         <div className="special-grid">
-          {SPECIAL_GROUPS.map((group) => (
-            <div key={group.id} className="special-group">
-              <h4>{group.name}</h4>
-              <div className="stamp-grid special-codes">
-                {group.codes.map(renderCodeButton)}
-              </div>
-            </div>
-          ))}
+          {SPECIAL_GROUPS.map((group) => {
+            const ownedCount = group.codes.filter((code) => stampsByCode[code]).length;
+            const isOpen = openSpecialGroups[group.id] || false;
+            return (
+              <article key={group.id} className="special-group">
+                <button
+                  type="button"
+                  className="country-card-header repeated-country-toggle"
+                  onClick={() => setOpenSpecialGroups((prev) => ({ ...prev, [group.id]: !isOpen }))}
+                >
+                  <div>
+                    <h4>{group.name}</h4>
+                    <span>{group.id === 'collectors' ? 'CC' : 'FWC'}</span>
+                  </div>
+                  <strong>{ownedCount}/{group.codes.length}</strong>
+                  <span>{isOpen ? '-' : '+'}</span>
+                </button>
+                {isOpen && (
+                  <div className="stamp-grid special-codes">
+                    {group.codes.map(renderCodeButton)}
+                  </div>
+                )}
+              </article>
+            );
+          })}
         </div>
       </section>
 

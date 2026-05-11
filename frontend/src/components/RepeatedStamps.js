@@ -21,6 +21,7 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
   const [codeInput, setCodeInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [openSpecialGroups, setOpenSpecialGroups] = useState({});
   const [openCountries, setOpenCountries] = useState({});
   const [selectedCode, setSelectedCode] = useState('');
 
@@ -222,17 +223,31 @@ function RepeatedStamps({ instagram, onRepeatedChanged }) {
               (total, code) => total + Number(repeatedByCode[code]?.quantity || 0),
               0
             );
+            const groupUnique = group.codes.filter((code) => repeatedByCode[code]).length;
+            const isOpen = openSpecialGroups[group.id] ?? groupTotal > 0;
             return (
-              <div key={group.id} className="special-group repeated-group">
-                <div className="repeated-group-title">
-                  <h4>{group.name}</h4>
-                  <strong>{groupTotal}</strong>
-                </div>
-                <div className="stamp-grid special-codes">
-                  {group.codes.map(renderRepeatedCell)}
-                </div>
-                {group.codes.includes(selectedCode) && renderSelectedControls()}
-              </div>
+              <article key={group.id} className="special-group repeated-group">
+                <button
+                  type="button"
+                  className="country-card-header repeated-country-toggle"
+                  onClick={() => setOpenSpecialGroups((prev) => ({ ...prev, [group.id]: !isOpen }))}
+                >
+                  <div>
+                    <h4>{group.name}</h4>
+                    <span>{group.id === 'collectors' ? 'CC' : 'FWC'}</span>
+                  </div>
+                  <strong>{groupUnique}/{group.codes.length} | x{groupTotal}</strong>
+                  <span>{isOpen ? '-' : '+'}</span>
+                </button>
+                {isOpen && (
+                  <>
+                    <div className="stamp-grid special-codes">
+                      {group.codes.map(renderRepeatedCell)}
+                    </div>
+                    {group.codes.includes(selectedCode) && renderSelectedControls()}
+                  </>
+                )}
+              </article>
             );
           })}
         </div>

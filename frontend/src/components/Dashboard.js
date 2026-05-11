@@ -45,7 +45,7 @@ function Dashboard({ stats }) {
 
         <div className="stat-card">
           <h3>Faltantes</h3>
-          <p className="stat-value">{stats.missing_count || 995}</p>
+          <p className="stat-value">{stats.missing_count || 994}</p>
         </div>
 
         <div className="stat-card stat-card-repeated">

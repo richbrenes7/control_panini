@@ -2,7 +2,7 @@ export const SPECIAL_GROUPS = [
   {
     id: 'special-top',
     name: 'Especiales FIFA World Cup',
-    codes: ['FWC', '00', ...Array.from({ length: 8 }, (_, index) => `FWC${index + 1}`)]
+    codes: ['00', ...Array.from({ length: 8 }, (_, index) => `FWC${index + 1}`)]
   },
   {
     id: 'special-bottom',
@@ -74,7 +74,6 @@ export const getStampType = (code) => {
   const normalizedCode = String(code || '').toUpperCase().trim();
 
   if (
-    normalizedCode === 'FWC' ||
     normalizedCode === '00' ||
     normalizedCode.startsWith('FWC') ||
     normalizedCode.startsWith('CC')
